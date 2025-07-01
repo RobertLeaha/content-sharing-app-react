@@ -1,39 +1,37 @@
-import { Link } from "react-router-dom";
+import { useNavigation } from "../hooks/useNavigation";
 
-const Header = () => {
+export default function Header() {
+  const router = useNavigation();
+
   return (
-    <header className="w-full bg-sky-100 py-16 px-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-center">
-          <div className="text-center ml-120">
-            <div className="mb-6">
-              <h1 className="text-5xl font-bold text-gray-800 leading-tight">
-                <div>Mica Mea</div>
-                <div>Carte</div>
-              </h1>
-            </div>
+    <div className="bg-gradient-to-r from-sky-100 to-blue-100 py-20">
+      <div className="max-w-4xl mx-auto text-center px-4">
+        <h1 className="text-5xl md:text-6xl font-bold text-sky-900 mb-6">
+          Mica mea carte
+        </h1>
 
-            <div className="max-w-md mx-auto">
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Descoperă lumea fascinantă a cuvintelor unde fiecare poveste
-                prinde viață.
-              </p>
+        <p className="text-xl text-sky-700 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Descoperă lumea fascinantă a cuvintelor unde fiecare poveste prinde
+          viață.
+        </p>
 
-              <div className="grid grid-cols-2 gap-2 max-w-xs mx-auto">
-                <button className="px-3 py-1.5 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors shadow-md">
-                  Scrie
-                </button>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button
+            onClick={() => router.push("/descopera")}
+            className="px-8 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors shadow-lg"
+          >
+            Citește
+          </button>
 
-                <button className="px-3 py-1.5 bg-sky-500 text-white font-semibold rounded-lg hover:bg-sky-600 transition-colors shadow-md">
-                  <Link to={"./discover"}>Citește</Link>
-                </button>
-              </div>
-            </div>
-          </div>
+          <button
+            onClick={() => router.push("/scrie-carte")}
+            className="px-8 py-3 bg-white text-sky-600 font-semibold rounded-lg hover:bg-sky-50 transition-colors shadow-lg border-2 border-sky-600"
+          >
+            Scrie
+          </button>
         </div>
       </div>
-    </header>
+          
+    </div>
   );
-};
-
-export default Header;
+}

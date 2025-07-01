@@ -3,28 +3,27 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import "./index.css";
 import Home from "./pages/Home.jsx";
-import Book from "./pages/Book.jsx";
-import MyAccount from "./pages/MyAccount.jsx";
-import Discover from "./pages/Discover.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import Genres from "./pages/Genres.jsx";
+import InregistrarePage from "./pages/Inregistrare.jsx";
+import ConectarePage from "./pages/Conectare.jsx";
+import BookPage from "./pages/Book.jsx";
+import DescoperaPage from "./pages/Descopera.jsx";
+import GenresPage from "./pages/Genres.jsx";
+import CapitolPage from "./pages/Capitol.jsx";
+import ScrieCartePage from "./pages/Scrie-carte.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/book" element={<Book />} />
-        <Route path="/discover" element={<Discover />} />
-        <Route path="/my-account" element={<MyAccount />} />
-        <Route path="/genres/:slug" element={<Genres />} />
+        <Route path="/inregistrare" element={<InregistrarePage />} />
+        <Route path="/conectare" element={<ConectarePage />} />
+        <Route path="/book" element={<BookPage />} />
+        <Route path="/descopera" element={<DescoperaPage />} />
+        <Route path="/genres/:slug" element={<GenresPage />} />
+        <Route path="/capitol" element={<CapitolPage />} />
+        <Route path="/scrie-carte" element={<ScrieCartePage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>
 );
-
-// dupa ce rezolv cu pagina book, la path ar trebuii sa scriu:
-//<Route path="/book/:slug" element={<Book />} />;

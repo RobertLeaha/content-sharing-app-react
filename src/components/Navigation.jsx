@@ -1,147 +1,169 @@
-import { NavLink } from "react-router";
-
 import { useState } from "react";
+import { useNavigation } from "../hooks/useNavigation";
+import { genres } from "../pages/Descopera";
+
+const searchSuggestions = [
+  "În numele trandafirului",
+  "Maitreyi",
+  "Ion",
+  "Enigma Otiliei",
+  "Baltagul",
+  "Moromeții",
+];
 
 export default function Navigation() {
-  const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
-  const [writeDropdownOpen, setWriteDropdownOpen] = useState(false);
+  const [isGenreOpen, setIsGenreOpen] = useState(false);
+  const [isWriteOpen, setIsWriteOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const router = useNavigation();
 
-  const genres = [
-    { name: "Ficțiune", path: "/genres/fictiune" },
-    { name: "Non-ficțiune", path: "/genres/non-fictiune" },
-    { name: "Romantice", path: "/genres/romantice" },
-    { name: "Thriller", path: "/genres/thriller" },
-    { name: "Mister", path: "/genres/mister" },
-    { name: "Fantasy", path: "/genres/fantasy" },
-    { name: "Sci-Fi", path: "/genres/sci-fi" },
-    { name: "Biografii", path: "/genres/biografii" },
-    { name: "Istorie", path: "/genres/istorie" },
-  ];
+  const filteredSuggestions = searchSuggestions.filter((book) =>
+    book.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSearch = (book) => {
+    setSearchQuery(book);
+    setShowSuggestions(false);
+    // Redirect to book page
+    router.push(`/book/${encodeURIComponent(book)}`);
+  };
+
+  const handleLogoClick = () => {
+    router.push("/");
+  };
 
   return (
-    <nav className="w-full bg-sky-100 shadow-md px-6 py-4">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
-        {/* Logo și Dropdown Genuri */}
-        <div className="flex items-center space-x-4">
-          <img src="/placeholder.svg?height=40&width=120" />
-
-          <div className="relative">
-            <button
-              onClick={() => setGenreDropdownOpen(!genreDropdownOpen)}
-              className="flex items-center space-x-1 px-4 py-2 text-gray-700 hover:text-sky-800 transition-colors"
+    <nav className="bg-white shadow-md border-b border-sky-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo și Dropdown Genuri */}
+          <div className="flex items-center space-x-4">
+            <div
+              className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleLogoClick}
             >
-              <span>Genuri</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+              <span className="text-2xl">📚</span>
+              <span className="ml-2 text-xl font-bold text-sky-800">
+                Mica Mea Carte
+              </span>
+            </div>
 
-            {genreDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-72 bg-sky-50 border border-sky-200 rounded-md shadow-lg z-10">
-                <div className="grid grid-cols-3 gap-1 p-2">
-                  {genres.map((genre, index) => (
-                    <NavLink to={genre.path} key={index}>
-                      <button
-                        className="text-left px-3 py-2 text-sm text-gray-700 hover:bg-sky-200 transition-colors rounded"
-                        onClick={() => setGenreDropdownOpen(false)}
-                      >
-                        {genre.name}
-                      </button>
-                    </NavLink>
+            <div className="relative">
+              <button
+                onClick={() => setIsGenreOpen(!isGenreOpen)}
+                className="flex items-center px-4 py-2 text-sky-700 hover:text-sky-900 hover:bg-sky-50 rounded-md transition-colors"
+              >
+                Genuri
+                <span className="ml-1">▼</span>
+              </button>
+
+              {isGenreOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-sky-200 z-50">
+                  {genres.map((genre) => (
+                    <button
+                      key={genre}
+                      onClick={() => {
+                        setIsGenreOpen(false);
+                        router.push(
+                          `/genres/${encodeURIComponent(genre.slug)}`
+                        );
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sky-700 hover:bg-sky-50 hover:text-sky-900 transition-colors"
+                    >
+                      {genre.name}
+                    </button>
                   ))}
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-lg mx-8 relative">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="🔍 Cărți"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowSuggestions(e.target.value.length > 0);
+                }}
+                onFocus={() => setShowSuggestions(searchQuery.length > 0)}
+                className="w-full pl-4 pr-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              />
+            </div>
+
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-sky-200 z-50">
+                {filteredSuggestions.map((book) => (
+                  <button
+                    key={book}
+                    onClick={() => handleSearch(book)}
+                    className="block w-full text-left px-4 py-2 text-sky-700 hover:bg-sky-50 hover:text-sky-900 transition-colors"
+                  >
+                    {book}
+                  </button>
+                ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Bara de Search */}
-        <div className="flex-1 max-w-md mx-8">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Caută cărți, autori..."
-              className="w-full px-4 py-2 pl-10 border border-sky-300 bg-sky-50 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-transparent"
-            />
-            <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-        </div>
-
-        {/* Butoane din dreapta */}
-        <div className="flex items-center space-x-4">
-          {/* Dropdown Scrie */}
-          <div className="relative">
-            <button
-              onClick={() => setWriteDropdownOpen(!writeDropdownOpen)}
-              className="flex items-center space-x-1 px-4 py-2 text-gray-700 hover:text-sky-800 transition-colors"
-            >
-              <span>Scrie</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {/* Butoane dreapta */}
+          <div className="flex items-center space-x-4">
+            {/* Dropdown Scrie */}
+            <div className="relative">
+              <button
+                onClick={() => setIsWriteOpen(!isWriteOpen)}
+                className="flex items-center px-4 py-2 text-sky-700 hover:text-sky-900 hover:bg-sky-50 rounded-md transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+                Scrie
+                <span className="ml-1">▼</span>
+              </button>
+
+              {isWriteOpen && (
+                <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-sky-200 z-50">
+                  <button
+                    onClick={() => {
+                      setIsWriteOpen(false);
+                      router.push("/scrie-carte");
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sky-700 hover:bg-sky-50 hover:text-sky-900 transition-colors"
+                  >
+                    Scrie o carte
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsWriteOpen(false);
+                      router.push("/capitol");
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sky-700 hover:bg-sky-50 hover:text-sky-900 transition-colors"
+                  >
+                    Scrie un capitol
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Butoane Conectare și Înregistrare */}
+            <button
+              onClick={() => router.push("/conectare")}
+              className="flex items-center px-4 py-2 text-sky-700 hover:text-sky-900 hover:bg-sky-50 rounded-md transition-colors"
+            >
+              Conectare
             </button>
 
-            {writeDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 w-48 bg-sky-50 border border-sky-200 rounded-md shadow-lg z-10">
-                <button className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-sky-200 transition-colors">
-                  Scrie o nouă carte
-                </button>
-                <button className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-sky-200 transition-colors">
-                  Un nou capitol
-                </button>
-                <button className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-sky-200 transition-colors">
-                  Continuă capitolul început
-                </button>
-              </div>
-            )}
+            <button
+              onClick={() => router.push("/inregistrare")}
+              className="flex items-center px-4 py-2 bg-sky-600 text-white hover:bg-sky-700 rounded-md transition-colors"
+            >
+              Înregistrare
+            </button>
           </div>
-          <NavLink
-            to={"/login"}
-            className="px-4 py-2 text-sky-700 border border-sky-600 bg-sky-50 rounded-md hover:bg-sky-200 transition-colors"
-          >
-            Conetare
-          </NavLink>
-
-          <NavLink
-            to={"/register"}
-            className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors"
-          >
-            Intregistrare
-          </NavLink>
         </div>
       </div>
+          
     </nav>
   );
 }
