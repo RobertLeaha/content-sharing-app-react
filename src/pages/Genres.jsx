@@ -2,14 +2,25 @@ import { useParams } from "react-router-dom";
 import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
 import { defaultBooks } from "../pages/Descopera";
+import { useState, useEffect } from "react";
+import { getBooks } from "../utils/Book-Storage";
 
 export default function GenresPage() {
   const { slug } = useParams();
   const router = useNavigation();
+  const [userBooks, setUserBooks] = useState([]);
+
+  useEffect(() => {
+    const books = getBooks();
+    setUserBooks(books);
+  }, []);
+
+  const allBooks = [...defaultBooks, ...userBooks];
   const decodedGenre = decodeURIComponent(slug || "");
-  const books = defaultBooks.filter(
-    (curentBook) => curentBook.genre.slug === decodedGenre
+  const books = allBooks.filter(
+    (currentBook) => currentBook.genre.slug === decodedGenre
   );
+
   return (
     <div className="min-h-screen bg-sky-100">
       <Navigation />
@@ -27,11 +38,9 @@ export default function GenresPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {books.map((book, index) => (
             <div
-              key={index}
+              key={book.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer overflow-hidden"
-              onClick={() =>
-                router.push(`/book/${encodeURIComponent(book.title)}`)
-              }
+              onClick={() => router.push(`/read/${book.id}`)}
             >
               <div className="aspect-[3/4] bg-gradient-to-br from-sky-200 to-blue-300 flex items-center justify-center">
                 <img
@@ -45,7 +54,6 @@ export default function GenresPage() {
                 <h3 className="text-lg font-bold text-sky-900 mb-2">
                   {book.title}
                 </h3>
-
                 <p className="text-sky-600 mb-3">de {book.author}</p>
 
                 <div className="flex items-center justify-between">
@@ -66,7 +74,6 @@ export default function GenresPage() {
           ))}
         </div>
       </div>
-         
     </div>
   );
 }

@@ -1,168 +1,237 @@
 import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
-import { useState } from "react";
-
-const bookContent = {
-  "În numele trandafirului": {
-    title: "În numele trandafirului",
-    author: "Umberto Eco",
-    chapters: [
-      {
-        title: "Capitolul 1 - Prima zi",
-        content: `În care se ajunge la poalele mănăstirii și William dă dovadă de mare înțelepciune.
-
-Era o dimineață frumoasă de sfârșitul lunii noiembrie. În timpul nopții căzuse puțină zăpadă, dar nu mai mult de trei degete. În întunericul de dinaintea zorilor, în timp ce urcam pe cărarea care se înfășura în jurul muntelui, nu puteam vedea decât câteva urme de animale sălbatice pe zăpada proaspătă. Dar când soarele a început să răsară, am putut admira spectacolul minunat al mănăstirii.
-
-Mănăstirea se înălța pe un platou care domina văile de jur împrejur, și de la distanță părea o cetate, cu zidurile sale înalte și turnurile masive. Pe măsură ce ne apropiam, am putut distinge mai bine arhitectura complexă a clădirilor, dispuse în jurul unei curți centrale.
-
-Maestrul meu, William de Baskerville, se opri pentru a contempla peisajul. Era un om înalt și slab, cu ochii ascuțiți și pătrunzători, care părea să vadă lucruri pe care alții nu le observau. În acea dimineață, privirea lui era concentrată asupra unor urme din zăpadă.
-
-"Adso," îmi spuse, "vezi aceste urme? Aparțin unui cal negru, de cinci ani, foarte frumos, cu coada lungă, cu copitele mici și rotunde, dar cu galop foarte regulat. Capul îi este mic, urechile ascuțite, ochii mari. A trecut pe aici acum cel mult o jumătate de oră. A mers în direcția mănăstirii, și cred că îl vom găsi acolo."
-
-Eram uimit de aceste deducții, dar nu am avut timp să-l întreb cum ajunsese la aceste concluzii, pentru că în acel moment am văzut venind spre noi un grup de călugări, care păreau foarte agitați.`,
-      },
-      {
-        title: "Capitolul 2 - În care se întâlnesc personaje importante",
-        content: `Călugării care veneau spre noi erau conduși de un bărbat în vârstă, cu barba albă și privirea severă. Era abatele mănăstirii, Abbone din Fossanova, un om respectat pentru înțelepciunea și autoritatea sa.
-
-"Sunteți William de Baskerville?" întrebă abatele, privind cu atenție la maestrul meu.
-
-"Da, părinte abate. Și acesta este discipulul meu, Adso din Melk. Am venit la chemarea voastră pentru a participa la disputele teologice care vor avea loc aici."
-
-Abatele păru ușurat. "Slavă Domnului că ați ajuns în siguranță. Dar îmi pare rău să vă spun că situația de aici s-a complicat foarte mult. În această dimineață am descoperit că unul dintre frații noștri, Adelmo din Otranto, a murit în împrejurări misterioase."
-
-William își încruntă sprâncenele. "Misterioase în ce fel?"
-
-"Corpul său a fost găsit la baza turnului, zdrobit de cădere. Dar nimeni nu înțelege cum a ajuns acolo. Adelmo era un tânăr plin de viață, un miniaturist talentat, care lucra în scriptoriul nostru. Nu avea niciun motiv să se sinucidă."
-
-În timp ce abatele vorbea, am observat că alți călugări se adunaseră în jurul nostru, ascultând cu atenție. Printre ei am remarcat un bărbat tânăr, cu privirea inteligentă și mâinile pătate de cerneală - probabil un alt copist din scriptoriul.
-
-"Părinte abate," spuse William, "dacă îmi permiteți, aș dori să examinez locul unde a fost găsit corpul. Poate că voi putea să văd lucruri care au scăpat altora."
-
-Abatele ezită un moment. "Bineînțeles, frate William. Dar să știți că această tragedie vine într-un moment foarte nepotrivit. Mâine vor sosi aici reprezentanții papei și ai împăratului pentru negocierile despre care v-am scris. Această moarte misterioasă ar putea să complice foarte mult lucrurile."
-
-Am înțeles atunci că ne aflam în mijlocul unor evenimente care depășeau cu mult o simplă tragedie locală. Mănăstirea devenise teatrul unor intrigi politice și religioase de mare importanță, iar moartea lui Adelmo ar putea fi doar începutul unei serii de evenimente tulburi.`,
-      },
-    ],
-  },
-};
+import { getBooks } from "../utils/Book-Storage";
+import { defaultBooks } from "./Descopera";
+import { defaultBooksContent } from "../data/defaultBooksContent";
 
 export default function ReadPage() {
-  const { title } = useParams();
-  const decodedTitle = decodeURIComponent(title);
-  const book = bookContent[decodedTitle];
+  const { id } = useParams();
+  const router = useNavigation();
+  const [userBooks, setUserBooks] = useState([]);
   const [currentChapter, setCurrentChapter] = useState(0);
+
+  useEffect(() => {
+    const books = getBooks();
+    setUserBooks(books);
+  }, []);
+
+  const allBooks = [...defaultBooks, ...userBooks];
+  const book = allBooks.find((b) => b.id.toString() === id);
+
+  const createDemoContent = (bookTitle) => {
+    return (
+      defaultBooksContent[bookTitle] || [
+        {
+          title: "Capitolul 1: Previzualizare",
+          content: `Aceasta este o previzualizare pentru cartea "${bookTitle}". 
+
+În această versiune demo, conținutul complet al cărții nu este disponibil, dar poți vedea cum arăta experiența de lectură.
+
+Cartea originală conține multiple capitole cu povești captivante și personaje memorabile care te vor ține cu sufletul la gură.
+
+Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau digitală a cărții din librăriile partenere.`,
+        },
+      ]
+    );
+  };
 
   if (!book) {
     return (
       <div className="min-h-screen bg-sky-100">
         <Navigation />
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-          <h1 className="text-2xl font-bold text-sky-900">
-            Cartea nu a fost găsită
-          </h1>
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <span className="text-6xl mb-4 block">📚</span>
+            <h1 className="text-2xl font-bold text-sky-900 mb-4">
+              Cartea nu a fost găsită
+            </h1>
+            <p className="text-sky-600 mb-6">
+              Ne pare rău, dar cartea pe care o cauți nu există în colecția
+              noastră.
+            </p>
+            <button
+              onClick={() => router.push("/descopera")}
+              className="px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors"
+            >
+              Înapoi la cărți
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
+  const chapters = book.chapters || createDemoContent(book.title);
+  const isUserBook = userBooks.some((userBook) => userBook.id === book.id);
+
   return (
     <div className="min-h-screen bg-sky-100">
       <Navigation />
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-sky-600 text-white p-6">
+        <div className="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden">
+          <div className="bg-sky-600 text-white p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <span className="mr-3">📖</span>
+                <button
+                  onClick={() => router.back()}
+                  className="mr-4 p-2 hover:bg-sky-500 rounded-lg transition-colors"
+                  title="Înapoi"
+                >
+                  ←
+                </button>
                 <div>
-                  <h1 className="text-2xl font-bold">{book.title}</h1>
+                  <h1 className="text-xl font-bold">{book.title}</h1>
                   <p className="text-sky-100">de {book.author}</p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-sky-100">
-                  Capitol {currentChapter + 1} din {book.chapters.length}
+              <div className="flex items-center space-x-2">
+                {isUserBook && (
+                  <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full">
+                    Cartea ta
+                  </span>
+                )}
+                <span className="px-3 py-1 bg-sky-500 text-white text-sm rounded-full">
+                  {book.genre.name}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {chapters.length > 1 && (
+            <div className="bg-sky-50 p-4 border-b border-sky-200">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() =>
+                    setCurrentChapter(Math.max(0, currentChapter - 1))
+                  }
+                  disabled={currentChapter === 0}
+                  className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Capitol anterior
+                </button>
+
+                <div className="text-center">
+                  <p className="text-sky-700 font-medium">
+                    Capitol {currentChapter + 1} din {chapters.length}
+                  </p>
+                  <p className="text-sky-500 text-sm">
+                    {chapters[currentChapter]?.title}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    setCurrentChapter(
+                      Math.min(chapters.length - 1, currentChapter + 1)
+                    )
+                  }
+                  disabled={currentChapter === chapters.length - 1}
+                  className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  Capitol următor →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-6 border-b border-sky-200">
+            <h2 className="text-2xl font-bold text-sky-900 mb-2">
+              {chapters[currentChapter]?.title}
+            </h2>
+            <div className="flex items-center space-x-4 text-sm text-sky-600">
+              <span>📖 Capitol {currentChapter + 1}</span>
+              <span>
+                ⏱ ~
+                {Math.ceil(
+                  chapters[currentChapter]?.content.split(" ").length / 200
+                )}{" "}
+                min citire
+              </span>
+              <span>
+                📝 {chapters[currentChapter]?.content.split(" ").length} cuvinte
+              </span>
+            </div>
+          </div>
+
+          <div className="p-8">
+            <div className="prose prose-lg max-w-none">
+              {chapters[currentChapter]?.content
+                .split("\n\n")
+                .map((paragraph, index) => (
+                  <p
+                    key={index}
+                    className="text-sky-800 leading-relaxed mb-6 text-justify"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+            </div>
+          </div>
+
+          <div className="bg-sky-50 p-4 border-t border-sky-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 mr-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-sky-600">Progres lectură</span>
+                  <span className="text-sm text-sky-600">
+                    {Math.round(((currentChapter + 1) / chapters.length) * 100)}
+                    %
+                  </span>
+                </div>
+                <div className="w-full bg-sky-200 rounded-full h-2">
+                  <div
+                    className="bg-sky-600 h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${
+                        ((currentChapter + 1) / chapters.length) * 100
+                      }%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => router.push(`/book/${book.id}`)}
+                  className="px-4 py-2 text-sky-600 hover:text-sky-800 hover:bg-sky-100 rounded-lg transition-colors"
+                >
+                  📋 Detalii carte
+                </button>
+                <button
+                  onClick={() => router.push("/descopera")}
+                  className="px-4 py-2 text-sky-600 hover:text-sky-800 hover:bg-sky-100 rounded-lg transition-colors"
+                >
+                  📚 Alte cărți
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {!isUserBook && (
+          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+            <div className="flex items-start">
+              <span className="text-2xl mr-3">ℹ️</span>
+              <div>
+                <h3 className="font-semibold text-amber-800 mb-2">
+                  Previzualizare limitată
+                </h3>
+                <p className="text-amber-700">
+                  Aceasta este o previzualizare pentru cartea "{book.title}".
+                  Pentru conținutul complet, te rugăm să accesezi versiunea
+                  fizică sau digitală a cărții.
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Navigation */}
-          <div className="bg-sky-50 px-6 py-4 border-b">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() =>
-                  setCurrentChapter(Math.max(0, currentChapter - 1))
-                }
-                disabled={currentChapter === 0}
-                className="flex items-center px-4 py-2 text-sky-600 hover:text-sky-800 disabled:text-sky-300 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="mr-1">←</span>
-                Capitol anterior
-              </button>
-
-              <h2 className="text-lg font-semibold text-sky-800">
-                {book.chapters[currentChapter].title}
-              </h2>
-
-              <button
-                onClick={() =>
-                  setCurrentChapter(
-                    Math.min(book.chapters.length - 1, currentChapter + 1)
-                  )
-                }
-                disabled={currentChapter === book.chapters.length - 1}
-                className="flex items-center px-4 py-2 text-sky-600 hover:text-sky-800 disabled:text-sky-300 disabled:cursor-not-allowed transition-colors"
-              >
-                Capitol următor
-                <span className="ml-1">→</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-8">
-            <div className="prose prose-lg max-w-none">
-              <div className="text-sky-900 leading-relaxed whitespace-pre-line">
-                {book.chapters[currentChapter].content}
-              </div>
-            </div>
-          </div>
-
-          {/* Footer Navigation */}
-          <div className="bg-sky-50 px-6 py-4 border-t">
-            <div className="flex justify-between">
-              <button
-                onClick={() =>
-                  setCurrentChapter(Math.max(0, currentChapter - 1))
-                }
-                disabled={currentChapter === 0}
-                className="flex items-center px-6 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed transition-colors"
-              >
-                <span className="mr-2">←</span>
-                Anterior
-              </button>
-
-              <button
-                onClick={() =>
-                  setCurrentChapter(
-                    Math.min(book.chapters.length - 1, currentChapter + 1)
-                  )
-                }
-                disabled={currentChapter === book.chapters.length - 1}
-                className="flex items-center px-6 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:bg-sky-300 disabled:cursor-not-allowed transition-colors"
-              >
-                Următor
-                <span className="ml-2">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-          
     </div>
   );
 }

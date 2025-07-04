@@ -3,10 +3,9 @@ import Navigation from "../components/Navigation";
 import { useNavigation } from "../hooks/useNavigation";
 import { getBooks, deleteBook } from "../utils/Book-Storage";
 
-// Cărțile predefinite
 export const defaultBooks = [
   {
-    id: 1,
+    id: "default-1",
     title: "În numele trandafirului",
     author: "Umberto Eco",
     rating: 4.8,
@@ -16,7 +15,7 @@ export const defaultBooks = [
     cover: "/placeholder.svg?height=300&width=200",
   },
   {
-    id: 2,
+    id: "default-2",
     title: "Maitreyi",
     author: "Mircea Eliade",
     rating: 4.6,
@@ -26,7 +25,7 @@ export const defaultBooks = [
     cover: "/placeholder.svg?height=300&width=200",
   },
   {
-    id: 3,
+    id: "default-3",
     title: "Ion",
     author: "Liviu Rebreanu",
     rating: 4.4,
@@ -36,7 +35,7 @@ export const defaultBooks = [
     cover: "/placeholder.svg?height=300&width=200",
   },
   {
-    id: 4,
+    id: "default-4",
     title: "Baltagul",
     author: "Mihail Sadoveanu",
     rating: 4.7,
@@ -46,7 +45,7 @@ export const defaultBooks = [
     cover: "/placeholder.svg?height=300&width=200",
   },
   {
-    id: 5,
+    id: "default-5",
     title: "Enigma Otiliei",
     author: "George Călinescu",
     rating: 4.3,
@@ -56,7 +55,7 @@ export const defaultBooks = [
     cover: "/placeholder.svg?height=300&width=200",
   },
   {
-    id: 6,
+    id: "default-6",
     title: "Moromeții",
     author: "Marin Preda",
     rating: 4.5,
@@ -73,27 +72,26 @@ export const genres = [
   { slug: "drama", name: "Drama" },
   { slug: "romance", name: "Romantism" },
   { slug: "fantasy", name: "Fantasy" },
-  { slug: "sf", name: "SF" },
+  { slug: "sf", name: "Sci-Fi" },
   { slug: "non-fiction", name: "Non-Fictiune" },
+  { slug: "horror", name: "Horror" },
   { slug: "mystery", name: "Mister" },
 ];
 
 export default function DescoperaPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("Toate");
-  const [sortBy, setSortBy] = useState("views"); // 'views', 'rating', 'date', 'alphabetical'
-  const [sortOrder, setSortOrder] = useState("desc"); // 'asc', 'desc'
+  const [selectedGenre, setSelectedGenre] = useState("toate");
+  const [sortBy, setSortBy] = useState("views");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [userBooks, setUserBooks] = useState([]);
   const [showUserBooksOnly, setShowUserBooksOnly] = useState(false);
   const router = useNavigation();
 
-  // Încarcă cărțile utilizatorului la montarea componentei
   useEffect(() => {
     const books = getBooks();
     setUserBooks(books);
   }, []);
 
-  // Combină cărțile predefinite cu cele ale utilizatorului
   const allBooks = showUserBooksOnly
     ? userBooks
     : [...defaultBooks, ...userBooks];
@@ -104,7 +102,7 @@ export default function DescoperaPage() {
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGenre =
-        selectedGenre === "Toate" || book.genre === selectedGenre;
+        selectedGenre === "toate" || book.genre.slug === selectedGenre;
       return matchesSearch && matchesGenre;
     })
     .sort((a, b) => {
@@ -135,12 +133,12 @@ export default function DescoperaPage() {
   };
 
   const handleDeleteBook = (bookId, event) => {
-    event.stopPropagation(); // Previne navigarea către pagina cărții
+    event.stopPropagation();
 
     if (window.confirm("Ești sigur că vrei să ștergi această carte?")) {
       const success = deleteBook(bookId);
       if (success) {
-        setUserBooks(getBooks()); // Reîncarcă cărțile
+        setUserBooks(getBooks());
         alert("Cartea a fost ștearsă cu succes!");
       } else {
         alert("A apărut o eroare la ștergerea cărții.");
@@ -156,7 +154,6 @@ export default function DescoperaPage() {
     <div className="min-h-screen bg-sky-100">
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-sky-900 mb-4">
             Descoperă cărți
@@ -166,7 +163,6 @@ export default function DescoperaPage() {
           </p>
         </div>
 
-        {/* Toggle pentru cărțile utilizatorului */}
         <div className="mb-6 flex justify-center">
           <div className="bg-white rounded-lg p-1 shadow-md">
             <button
@@ -192,10 +188,8 @@ export default function DescoperaPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
             <div className="relative">
               <input
                 type="text"
@@ -206,22 +200,21 @@ export default function DescoperaPage() {
               />
             </div>
 
-            {/* Genre Filter */}
             <div className="relative">
               <select
                 value={selectedGenre}
                 onChange={(e) => setSelectedGenre(e.target.value)}
                 className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent appearance-none"
               >
+                <option value="toate">Toate genurile</option>
                 {genres.map((genre) => (
-                  <option key={genre} value={genre}>
-                    {genre}
+                  <option key={genre.slug} value={genre.slug}>
+                    {genre.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Sort By */}
             <div>
               <select
                 value={sortBy}
@@ -235,7 +228,6 @@ export default function DescoperaPage() {
               </select>
             </div>
 
-            {/* Sort Order */}
             <div>
               <button
                 onClick={toggleSortOrder}
@@ -248,7 +240,6 @@ export default function DescoperaPage() {
           </div>
         </div>
 
-        {/* Results Count */}
         <div className="mb-6">
           <p className="text-sky-700">
             {filteredAndSortedBooks.length}{" "}
@@ -259,24 +250,19 @@ export default function DescoperaPage() {
           </p>
         </div>
 
-        {/* Books Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredAndSortedBooks.map((book) => (
             <div
               key={book.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer overflow-hidden relative"
-              onClick={() =>
-                router.push(`/book/${encodeURIComponent(book.title)}`)
-              }
+              onClick={() => router.push(`/read/${book.id}`)}
             >
-              {/* Badge pentru cărțile utilizatorului */}
               {isUserBook(book.id) && (
                 <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full z-10">
                   Cartea ta
                 </div>
               )}
 
-              {/* Buton de ștergere pentru cărțile utilizatorului */}
               {isUserBook(book.id) && (
                 <button
                   onClick={(e) => handleDeleteBook(book.id, e)}
@@ -298,7 +284,7 @@ export default function DescoperaPage() {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="px-2 py-1 bg-sky-100 text-sky-700 text-xs rounded-full">
-                    {book.genre}
+                    {book.genre.name}
                   </span>
                   <div className="flex items-center text-yellow-500">
                     <span>⭐</span>
@@ -311,7 +297,6 @@ export default function DescoperaPage() {
                 <h3 className="text-sm font-bold text-sky-900 mb-1 line-clamp-2">
                   {book.title}
                 </h3>
-
                 <p className="text-sky-600 text-xs mb-2">de {book.author}</p>
 
                 <div className="flex items-center justify-between text-sky-500 text-xs">
@@ -334,7 +319,6 @@ export default function DescoperaPage() {
           ))}
         </div>
 
-        {/* No Results */}
         {filteredAndSortedBooks.length === 0 && (
           <div className="text-center py-12">
             <div className="text-sky-400 mb-4">
@@ -361,7 +345,6 @@ export default function DescoperaPage() {
           </div>
         )}
       </div>
-         
     </div>
   );
 }

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigation } from "../hooks/useNavigation";
-import { genres } from "../pages/Descopera";
+import { getBooks } from "../utils/Book-Storage";
+import { genres } from "../data/genuri";
 
-const searchSuggestions = [
-  "În numele trandafirului",
-  "Maitreyi",
-  "Ion",
-  "Enigma Otiliei",
-  "Baltagul",
-  "Moromeții",
+const defaultSuggestions = [
+  { id: "default-1", title: "În numele trandafirului" },
+  { id: "default-2", title: "Maitreyi" },
+  { id: "default-3", title: "Ion" },
+  { id: "default-5", title: "Enigma Otiliei" },
+  { id: "default-4", title: "Baltagul" },
+  { id: "default-6", title: "Moromeții" },
 ];
 
 export default function Navigation() {
@@ -16,17 +17,28 @@ export default function Navigation() {
   const [isWriteOpen, setIsWriteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [userBooks, setUserBooks] = useState([]);
   const router = useNavigation();
 
-  const filteredSuggestions = searchSuggestions.filter((book) =>
-    book.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    const books = getBooks();
+    setUserBooks(books);
+  }, []);
+
+  const userBookSuggestions = userBooks.map((book) => ({
+    id: book.id,
+    title: book.title,
+  }));
+  const allSuggestions = [...defaultSuggestions, ...userBookSuggestions];
+
+  const filteredSuggestions = allSuggestions.filter((book) =>
+    book.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSearch = (book) => {
-    setSearchQuery(book);
+  const handleSearch = (bookId) => {
+    setSearchQuery("");
     setShowSuggestions(false);
-    // Redirect to book page
-    router.push(`/book/${encodeURIComponent(book)}`);
+    router.push(`/read/${bookId}`);
   };
 
   const handleLogoClick = () => {
@@ -37,7 +49,6 @@ export default function Navigation() {
     <nav className="bg-white shadow-md border-b border-sky-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo și Dropdown Genuri */}
           <div className="flex items-center space-x-4">
             <div
               className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
@@ -62,7 +73,7 @@ export default function Navigation() {
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-sky-200 z-50">
                   {genres.map((genre) => (
                     <button
-                      key={genre}
+                      key={genre.slug}
                       onClick={() => {
                         setIsGenreOpen(false);
                         router.push(
@@ -79,7 +90,6 @@ export default function Navigation() {
             </div>
           </div>
 
-          {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-8 relative">
             <div className="relative">
               <input
@@ -99,20 +109,18 @@ export default function Navigation() {
               <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-sky-200 z-50">
                 {filteredSuggestions.map((book) => (
                   <button
-                    key={book}
-                    onClick={() => handleSearch(book)}
+                    key={book.id}
+                    onClick={() => handleSearch(book.id)}
                     className="block w-full text-left px-4 py-2 text-sky-700 hover:bg-sky-50 hover:text-sky-900 transition-colors"
                   >
-                    {book}
+                    {book.title}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Butoane dreapta */}
           <div className="flex items-center space-x-4">
-            {/* Dropdown Scrie */}
             <div className="relative">
               <button
                 onClick={() => setIsWriteOpen(!isWriteOpen)}
@@ -146,7 +154,6 @@ export default function Navigation() {
               )}
             </div>
 
-            {/* Butoane Conectare și Înregistrare */}
             <button
               onClick={() => router.push("/conectare")}
               className="flex items-center px-4 py-2 text-sky-700 hover:text-sky-900 hover:bg-sky-50 rounded-md transition-colors"
@@ -163,7 +170,6 @@ export default function Navigation() {
           </div>
         </div>
       </div>
-          
     </nav>
   );
 }

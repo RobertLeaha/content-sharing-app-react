@@ -2,7 +2,6 @@ import { useState } from "react";
 import Navigation from "../components/Navigation";
 import { useNavigation } from "../hooks/useNavigation";
 import { saveBook } from "../utils/Book-Storage";
-import genres from "../pages/Genres";
 
 export default function ScrieCartePage() {
   const [bookData, setBookData] = useState({
@@ -175,15 +174,15 @@ export default function ScrieCartePage() {
                     required
                   >
                     <option value="">Selectează genul</option>
-                    <option value="Acțiune">Acțiune</option>
-                    <option value="Aventură">Aventură</option>
-                    <option value="Dramă">Dramă</option>
-                    <option value="Fantasy">Fantasy</option>
-                    <option value="Horror">Horror</option>
-                    <option value="Mister">Mister</option>
-                    <option value="Romantism">Romantism</option>
-                    <option value="Sci-Fi">Sci-Fi</option>
-                    <option value="Thriller">Thriller</option>
+                    <option value="action">Acțiune</option>
+                    <option value="adventure">Aventură</option>
+                    <option value="drama">Dramă</option>
+                    <option value="fantasy">Fantasy</option>
+                    <option value="horror">Horror</option>
+                    <option value="mystery">Mister</option>
+                    <option value="romance">Romantism</option>
+                    <option value="sf">Sci-Fi</option>
+                    <option value="thriller">Thriller</option>
                   </select>
                 </div>
               </div>

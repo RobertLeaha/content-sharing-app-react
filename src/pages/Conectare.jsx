@@ -23,14 +23,12 @@ export default function ConectarePage() {
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header */}
             <div className="bg-sky-600 text-white p-6 text-center">
               <span className="text-4xl mb-4">🔐</span>
               <h1 className="text-2xl font-bold">Conectare</h1>
               <p className="text-sky-100 mt-2">Bun venit înapoi!</p>
             </div>
 
-            {/* Form */}
             <div className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -124,7 +122,6 @@ export default function ConectarePage() {
           </div>
         </div>
       </div>
-          
     </div>
   );
 }

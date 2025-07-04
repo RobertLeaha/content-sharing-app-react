@@ -9,12 +9,10 @@ export default function Header() {
         <h1 className="text-5xl md:text-6xl font-bold text-sky-900 mb-6">
           Mica mea carte
         </h1>
-
         <p className="text-xl text-sky-700 mb-8 max-w-2xl mx-auto leading-relaxed">
           Descoperă lumea fascinantă a cuvintelor unde fiecare poveste prinde
           viață.
         </p>
-
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={() => router.push("/descopera")}
@@ -22,7 +20,6 @@ export default function Header() {
           >
             Citește
           </button>
-
           <button
             onClick={() => router.push("/scrie-carte")}
             className="px-8 py-3 bg-white text-sky-600 font-semibold rounded-lg hover:bg-sky-50 transition-colors shadow-lg border-2 border-sky-600"
@@ -31,7 +28,6 @@ export default function Header() {
           </button>
         </div>
       </div>
-          
     </div>
   );
 }

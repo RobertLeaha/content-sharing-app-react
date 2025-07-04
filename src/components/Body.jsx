@@ -2,7 +2,7 @@ import { useNavigation } from "../hooks/useNavigation";
 
 const topBooks = [
   {
-    id: 1,
+    id: "default-1",
     title: "În numele trandafirului",
     author: "Umberto Eco",
     rating: 4.8,
@@ -13,7 +13,7 @@ const topBooks = [
       "O capodoperă a literaturii contemporane care îmbină misterul cu filosofia medievală.",
   },
   {
-    id: 2,
+    id: "default-2",
     title: "Maitreyi",
     author: "Mircea Eliade",
     rating: 4.6,
@@ -24,7 +24,7 @@ const topBooks = [
       "O poveste de dragoste transcendentală inspirată din experiența autorului în India.",
   },
   {
-    id: 3,
+    id: "default-3",
     title: "Ion",
     author: "Liviu Rebreanu",
     rating: 4.4,
@@ -56,9 +56,7 @@ export default function Body() {
             <div
               key={book.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer overflow-hidden"
-              onClick={() =>
-                router.push(`/book/${encodeURIComponent(book.title)}`)
-              }
+              onClick={() => router.push(`/read/${book.id}`)}
             >
               <div className="aspect-[3/4] bg-gradient-to-br from-sky-200 to-blue-300 flex items-center justify-center">
                 <img
@@ -84,9 +82,7 @@ export default function Body() {
                 <h3 className="text-xl font-bold text-sky-900 mb-2">
                   {book.title}
                 </h3>
-
                 <p className="text-sky-600 mb-3">de {book.author}</p>
-
                 <p className="text-sky-700 text-sm mb-4 line-clamp-2">
                   {book.description}
                 </p>
@@ -102,7 +98,6 @@ export default function Body() {
           ))}
         </div>
       </div>
-          
     </div>
   );
 }
