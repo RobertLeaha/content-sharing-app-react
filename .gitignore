@@ -25,4 +25,8 @@ dist-ssr
 *.sw?
  
 # Secret
+<<<<<<< HEAD
 src/config
+=======
+src/config/firebase.js
+>>>>>>> b30f635d397af2ea3cbb8b67957399d02591359f
