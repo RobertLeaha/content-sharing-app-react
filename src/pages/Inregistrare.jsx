@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Navigation from "../components/Navigation";
+import FormField from "../components/FormField";
+import Button from "../components/Button";
 import { useNavigation } from "../hooks/useNavigation";
 import { useAuth } from "../context/Auth-context";
 
@@ -18,17 +20,23 @@ export default function InregistrarePage() {
   const router = useNavigation();
   const { signUp } = useAuth();
 
+  const handleInputChange = (field) => (e) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    // Șterge eroarea pentru câmpul modificat
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
-    // Validare nume
     if (!formData.name.trim()) {
       newErrors.name = "Numele este obligatoriu";
     } else if (formData.name.trim().length < 2) {
       newErrors.name = "Numele trebuie să aibă cel puțin 2 caractere";
     }
 
-    // Validare email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = "Email-ul este obligatoriu";
@@ -36,14 +44,12 @@ export default function InregistrarePage() {
       newErrors.email = "Email-ul nu este valid";
     }
 
-    // Validare parolă
     if (!formData.password) {
       newErrors.password = "Parola este obligatorie";
     } else if (formData.password.length < 6) {
       newErrors.password = "Parola trebuie să aibă cel puțin 6 caractere";
     }
 
-    // Validare confirmare parolă
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Confirmarea parolei este obligatorie";
     } else if (formData.password !== formData.confirmPassword) {
@@ -77,7 +83,6 @@ export default function InregistrarePage() {
         );
         router.push("/");
       } else {
-        // Tratează erorile Firebase
         let errorMessage = "A apărut o eroare la înregistrare";
 
         if (result.error.includes("email-already-in-use")) {
@@ -118,139 +123,56 @@ export default function InregistrarePage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Numele complet
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                        errors.name
-                          ? "border-red-300 bg-red-50"
-                          : "border-sky-300"
-                      }`}
-                      placeholder="👤 Numele tău complet"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                  )}
-                </div>
+                <FormField
+                  label="Numele complet"
+                  value={formData.name}
+                  onChange={handleInputChange("name")}
+                  placeholder="👤 Numele tău complet"
+                  required
+                  error={errors.name}
+                  disabled={isLoading}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Adresa de email
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                        errors.email
-                          ? "border-red-300 bg-red-50"
-                          : "border-sky-300"
-                      }`}
-                      placeholder="📧 exemplu@email.com"
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                  )}
-                </div>
+                <FormField
+                  label="Adresa de email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange("email")}
+                  placeholder="📧 exemplu@email.com"
+                  required
+                  error={errors.email}
+                  disabled={isLoading}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Parola
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          password: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                        errors.password
-                          ? "border-red-300 bg-red-50"
-                          : "border-sky-300"
-                      }`}
-                      placeholder="🔒 Alege o parolă sigură"
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sky-400 hover:text-sky-600"
-                      disabled={isLoading}
-                    >
-                      {showPassword ? "🙈" : "👁"}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
+                <FormField
+                  label="Parola"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleInputChange("password")}
+                  placeholder="🔒 Alege o parolă sigură"
+                  required
+                  error={errors.password}
+                  disabled={isLoading}
+                  showPasswordToggle={true}
+                  showPassword={showPassword}
+                  onTogglePassword={() => setShowPassword(!showPassword)}
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Confirmă parola
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={formData.confirmPassword}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          confirmPassword: e.target.value,
-                        }))
-                      }
-                      className={`w-full px-4 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-                        errors.confirmPassword
-                          ? "border-red-300 bg-red-50"
-                          : "border-sky-300"
-                      }`}
-                      placeholder="🔒 Confirmă parola"
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sky-400 hover:text-sky-600"
-                      disabled={isLoading}
-                    >
-                      {showConfirmPassword ? "🙈" : "👁"}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
+                <FormField
+                  label="Confirmă parola"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange("confirmPassword")}
+                  placeholder="🔒 Confirmă parola"
+                  required
+                  error={errors.confirmPassword}
+                  disabled={isLoading}
+                  showPasswordToggle={true}
+                  showPassword={showConfirmPassword}
+                  onTogglePassword={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                />
 
                 <div className="flex items-center">
                   <input
@@ -270,32 +192,27 @@ export default function InregistrarePage() {
                   </span>
                 </div>
 
-                <button
+                <Button
                   type="submit"
+                  loading={isLoading}
                   disabled={isLoading}
-                  className="w-full bg-sky-600 text-white py-3 px-4 rounded-lg hover:bg-sky-700 disabled:bg-sky-400 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center"
+                  className="w-full"
                 >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Se înregistrează...
-                    </>
-                  ) : (
-                    "Înregistrează-te"
-                  )}
-                </button>
+                  Înregistrează-te
+                </Button>
               </form>
 
               <div className="mt-6 text-center">
                 <p className="text-sky-600">
                   Ai deja cont?{" "}
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => router.push("/conectare")}
-                    className="text-sky-800 font-semibold hover:text-sky-900 transition-colors"
                     disabled={isLoading}
+                    className="p-0 h-auto font-semibold hover:text-sky-900"
                   >
                     Conectează-te aici
-                  </button>
+                  </Button>
                 </p>
               </div>
             </div>

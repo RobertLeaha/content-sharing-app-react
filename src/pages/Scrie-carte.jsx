@@ -1,5 +1,8 @@
 import { useState } from "react";
 import Navigation from "../components/Navigation";
+import PageHeader from "../components/PageHeader";
+import FormField from "../components/FormField";
+import Button from "../components/Button";
 import { useNavigation } from "../hooks/useNavigation";
 import { saveBook, saveBookLocal } from "../utils/Book-Storage";
 import { useAuth } from "../context/Auth-context";
@@ -14,6 +17,23 @@ export default function ScrieCartePage() {
   const [isSaving, setIsSaving] = useState(false);
   const router = useNavigation();
   const { user } = useAuth();
+
+  const genreOptions = [
+    { value: "", label: "Selectează genul" },
+    { value: "action", label: "Acțiune" },
+    { value: "adventure", label: "Aventură" },
+    { value: "drama", label: "Dramă" },
+    { value: "fantasy", label: "Fantasy" },
+    { value: "horror", label: "Horror" },
+    { value: "mystery", label: "Mister" },
+    { value: "romance", label: "Romantism" },
+    { value: "sf", label: "Sci-Fi" },
+    { value: "thriller", label: "Thriller" },
+  ];
+
+  const handleInputChange = (field) => (e) => {
+    setBookData((prev) => ({ ...prev, [field]: e.target.value }));
+  };
 
   const addChapter = () => {
     setBookData((prev) => ({
@@ -39,7 +59,6 @@ export default function ScrieCartePage() {
   };
 
   const handleSave = async () => {
-    // Validare de bază
     if (!bookData.title.trim()) {
       alert("Te rog să introduci un titlu pentru carte!");
       return;
@@ -55,7 +74,6 @@ export default function ScrieCartePage() {
       return;
     }
 
-    // Verifică dacă există cel puțin un capitol cu conținut
     const hasValidChapter = bookData.chapters.some(
       (chapter) => chapter.title.trim() && chapter.content.trim()
     );
@@ -68,7 +86,6 @@ export default function ScrieCartePage() {
     setIsSaving(true);
 
     try {
-      // Filtrează capitolele goale
       const validChapters = bookData.chapters.filter(
         (chapter) => chapter.title.trim() && chapter.content.trim()
       );
@@ -81,11 +98,9 @@ export default function ScrieCartePage() {
       let savedBook;
 
       if (user) {
-        // Utilizator autentificat - salvează în Firestore
         savedBook = await saveBook(bookToSave, user.uid);
         alert("Cartea a fost salvată cu succes în cloud! 🎉");
       } else {
-        // Utilizator neautentificat - salvează local
         savedBook = saveBookLocal(bookToSave);
         alert(
           "Cartea a fost salvată local! Pentru a o salva în cloud, te rugăm să te conectezi. 📱"
@@ -93,7 +108,6 @@ export default function ScrieCartePage() {
       }
 
       if (savedBook) {
-        // Resetează formularul
         setBookData({
           title: "",
           description: "",
@@ -101,7 +115,6 @@ export default function ScrieCartePage() {
           chapters: [{ title: "", content: "" }],
         });
 
-        // Redirectionează către pagina de descoperire după 1 secundă
         setTimeout(() => {
           router.push("/descopera");
         }, 1000);
@@ -125,38 +138,32 @@ export default function ScrieCartePage() {
     }
   };
 
+  const headerActions = (
+    <>
+      {!user && (
+        <div className="text-sky-100 text-sm">
+          💡 Conectează-te pentru a salva în cloud
+        </div>
+      )}
+      <Button
+        onClick={handleSave}
+        loading={isSaving}
+        disabled={isSaving}
+        icon="💾"
+        className="bg-sky-500 hover:bg-sky-400"
+      >
+        {user ? "Salvează în cloud" : "Salvează local"}
+      </Button>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-sky-100">
       <Navigation />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-sky-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="mr-3">✏</span>
-                <h1 className="text-2xl font-bold">Scrie o carte nouă</h1>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                {!user && (
-                  <div className="text-sky-100 text-sm">
-                    💡 Conectează-te pentru a salva în cloud
-                  </div>
-                )}
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-                >
-                  <span className="mr-2">💾</span>
-                  {isSaving
-                    ? "Se salvează..."
-                    : user
-                    ? "Salvează în cloud"
-                    : "Salvează local"}
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Scrie o carte nouă" actions={headerActions} />
           </div>
 
           <div className="p-8">
@@ -166,69 +173,32 @@ export default function ScrieCartePage() {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Titlul cărții <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={bookData.title}
-                    onChange={(e) =>
-                      setBookData((prev) => ({
-                        ...prev,
-                        title: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    placeholder="Introdu titlul cărții..."
-                    required
-                  />
-                </div>
+                <FormField
+                  label="Titlul cărții"
+                  value={bookData.title}
+                  onChange={handleInputChange("title")}
+                  placeholder="Introdu titlul cărții..."
+                  required
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Genul <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={bookData.genre}
-                    onChange={(e) =>
-                      setBookData((prev) => ({
-                        ...prev,
-                        genre: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Selectează genul</option>
-                    <option value="action">Acțiune</option>
-                    <option value="adventure">Aventură</option>
-                    <option value="drama">Dramă</option>
-                    <option value="fantasy">Fantasy</option>
-                    <option value="horror">Horror</option>
-                    <option value="mystery">Mister</option>
-                    <option value="romance">Romantism</option>
-                    <option value="sf">Sci-Fi</option>
-                    <option value="thriller">Thriller</option>
-                  </select>
-                </div>
+                <FormField
+                  label="Genul"
+                  type="select"
+                  value={bookData.genre}
+                  onChange={handleInputChange("genre")}
+                  options={genreOptions}
+                  required
+                />
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-sky-700 mb-2">
-                  Descrierea cărții <span className="text-red-500">*</span>
-                </label>
-                <textarea
+                <FormField
+                  label="Descrierea cărții"
+                  type="textarea"
                   value={bookData.description}
-                  onChange={(e) =>
-                    setBookData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  rows={4}
-                  className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  onChange={handleInputChange("description")}
                   placeholder="Scrie o descriere captivantă a cărții tale..."
+                  rows={4}
                   required
                 />
               </div>
@@ -237,13 +207,9 @@ export default function ScrieCartePage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-sky-900">Capitole</h2>
-                <button
-                  onClick={addChapter}
-                  className="flex items-center px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
-                >
-                  <span className="mr-2">➕</span>
+                <Button onClick={addChapter} icon="➕">
                   Adaugă capitol
-                </button>
+                </Button>
               </div>
 
               <div className="space-y-6">
@@ -257,42 +223,38 @@ export default function ScrieCartePage() {
                         Capitol {index + 1}
                       </h3>
                       {bookData.chapters.length > 1 && (
-                        <button
+                        <Button
+                          variant="danger"
+                          size="small"
                           onClick={() => removeChapter(index)}
-                          className="text-red-500 hover:text-red-700 transition-colors"
+                          icon="🗑"
                         >
-                          <span>🗑</span>
-                        </button>
+                          Șterge
+                        </Button>
                       )}
                     </div>
 
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-sky-700 mb-2">
-                        Titlul capitolului
-                      </label>
-                      <input
-                        type="text"
+                      <FormField
+                        label="Titlul capitolului"
                         value={chapter.title}
                         onChange={(e) =>
                           updateChapter(index, "title", e.target.value)
                         }
-                        className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         placeholder="Titlul capitolului..."
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-sky-700 mb-2">
-                        Conținutul capitolului
-                      </label>
-                      <textarea
+                      <FormField
+                        label="Conținutul capitolului"
+                        type="textarea"
                         value={chapter.content}
                         onChange={(e) =>
                           updateChapter(index, "content", e.target.value)
                         }
-                        rows={12}
-                        className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         placeholder="Scrie conținutul capitolului aici..."
+                        rows={12}
                       />
                     </div>
                   </div>

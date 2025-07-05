@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
+import PageHeader from "../components/PageHeader";
+import FormField from "../components/FormField";
+import Button from "../components/Button";
+import LoadingSpinner from "../components/LoadingSpinner";
+import EmptyState from "../components/EmptyState";
 import {
   getBooks,
   updateBook,
@@ -42,8 +47,11 @@ export default function CapitolPage() {
     loadBooks();
   }, [user]);
 
+  const handleInputChange = (field) => (e) => {
+    setChapterData((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
   const handleSave = async () => {
-    // Validare de bază
     if (!chapterData.bookId) {
       alert("Te rog să selectezi o carte!");
       return;
@@ -62,7 +70,6 @@ export default function CapitolPage() {
     setIsSaving(true);
 
     try {
-      // Găsește cartea selectată
       const selectedBook = userBooks.find(
         (book) => book.id.toString() === chapterData.bookId
       );
@@ -73,26 +80,22 @@ export default function CapitolPage() {
         return;
       }
 
-      // Creează noul capitol
       const newChapter = {
         title: chapterData.chapterTitle.trim(),
         content: chapterData.content.trim(),
       };
 
-      // Adaugă capitolul la cartea existentă
       const updatedChapters = [...(selectedBook.chapters || []), newChapter];
 
       let success = false;
 
       if (user) {
-        // Utilizator autentificat - actualizează în Firestore
         success = await updateBook(
           selectedBook.id,
           { chapters: updatedChapters },
           user.uid
         );
       } else {
-        // Utilizator neautentificat - actualizează local
         success = updateBookLocal(selectedBook.id, {
           chapters: updatedChapters,
         });
@@ -103,14 +106,12 @@ export default function CapitolPage() {
           `Capitolul "${newChapter.title}" a fost adăugat cu succes la cartea "${selectedBook.title}"! 🎉`
         );
 
-        // Resetează formularul
         setChapterData({
           bookId: "",
           chapterTitle: "",
           content: "",
         });
 
-        // Reîncarcă cărțile pentru a reflecta schimbările
         if (user) {
           const updatedBooks = await getBooks(user.uid);
           setUserBooks(updatedBooks);
@@ -118,7 +119,6 @@ export default function CapitolPage() {
           setUserBooks(getBooksLocal());
         }
 
-        // Redirectionează către pagina cărții după 1 secundă
         setTimeout(() => {
           router.push(`/book/${selectedBook.id}`);
         }, 1000);
@@ -142,14 +142,44 @@ export default function CapitolPage() {
     }
   };
 
+  const bookOptions = [
+    { value: "", label: "Selectează o carte..." },
+    ...userBooks.map((book) => ({
+      value: book.id,
+      label: `${book.title} (${book.chapters?.length || 0} capitole)`,
+    })),
+  ];
+
+  const selectedBook = userBooks.find(
+    (book) => book.id.toString() === chapterData.bookId
+  );
+
+  const headerActions = (
+    <>
+      {!user && (
+        <div className="text-sky-100 text-sm">
+          💡 Conectează-te pentru cloud sync
+        </div>
+      )}
+      <Button
+        onClick={handleSave}
+        loading={isSaving}
+        disabled={isSaving}
+        icon="💾"
+        className="bg-sky-500 hover:bg-sky-400"
+      >
+        {user ? "Salvează în cloud" : "Salvează local"}
+      </Button>
+    </>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-sky-100">
         <Navigation />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
-            <p className="text-sky-600">Se încarcă cărțile tale...</p>
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <LoadingSpinner message="Se încarcă cărțile tale..." />
           </div>
         </div>
       </div>
@@ -162,51 +192,18 @@ export default function CapitolPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-sky-600 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="mr-3">📄</span>
-                <h1 className="text-2xl font-bold">Scrie un capitol nou</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                {!user && (
-                  <div className="text-sky-100 text-sm">
-                    💡 Conectează-te pentru cloud sync
-                  </div>
-                )}
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-                >
-                  <span className="mr-2">💾</span>
-                  {isSaving
-                    ? "Se salvează..."
-                    : user
-                    ? "Salvează în cloud"
-                    : "Salvează local"}
-                </button>
-              </div>
-            </div>
+            <PageHeader title="Scrie un capitol nou" actions={headerActions} />
           </div>
 
           <div className="p-8">
             {userBooks.length === 0 ? (
-              <div className="text-center py-12">
-                <span className="text-6xl mb-4 block">📚</span>
-                <h2 className="text-2xl font-bold text-sky-900 mb-4">
-                  Nu ai încă nicio carte
-                </h2>
-                <p className="text-sky-600 mb-6">
-                  Pentru a scrie un capitol, trebuie să ai cel puțin o carte
-                  creată.
-                </p>
-                <button
-                  onClick={() => router.push("/scrie-carte")}
-                  className="px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors"
-                >
-                  Scrie prima ta carte
-                </button>
-              </div>
+              <EmptyState
+                icon="📚"
+                title="Nu ai încă nicio carte"
+                description="Pentru a scrie un capitol, trebuie să ai cel puțin o carte creată."
+                buttonText="Scrie prima ta carte"
+                onButtonClick={() => router.push("/scrie-carte")}
+              />
             ) : (
               <>
                 <div className="mb-8">
@@ -215,87 +212,52 @@ export default function CapitolPage() {
                   </h2>
 
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-sky-700 mb-2">
-                      Alege cartea la care vrei să adaugi capitolul{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <select
+                    <FormField
+                      label="Alege cartea la care vrei să adaugi capitolul"
+                      type="select"
                       value={chapterData.bookId}
-                      onChange={(e) =>
-                        setChapterData((prev) => ({
-                          ...prev,
-                          bookId: e.target.value,
-                        }))
-                      }
-                      className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Selectează o carte...</option>
-                      {userBooks.map((book) => (
-                        <option key={book.id} value={book.id}>
-                          {book.title} ({book.chapters?.length || 0} capitole)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {chapterData.bookId && (
-                    <div className="bg-sky-50 rounded-lg p-4 mb-6">
-                      {(() => {
-                        const selectedBook = userBooks.find(
-                          (book) => book.id.toString() === chapterData.bookId
-                        );
-                        return selectedBook ? (
-                          <div>
-                            <h3 className="font-semibold text-sky-800 mb-2">
-                              Cartea selectată: {selectedBook.title}
-                            </h3>
-                            <p className="text-sky-600 text-sm mb-2">
-                              Gen: {selectedBook.genre.name}
-                            </p>
-                            <p className="text-sky-600 text-sm">
-                              Capitole existente:{" "}
-                              {selectedBook.chapters?.length || 0}
-                            </p>
-                            {selectedBook.chapters &&
-                              selectedBook.chapters.length > 0 && (
-                                <div className="mt-2">
-                                  <p className="text-sky-600 text-sm font-medium">
-                                    Ultimele capitole:
-                                  </p>
-                                  <ul className="text-sky-500 text-sm mt-1">
-                                    {selectedBook.chapters
-                                      .slice(-3)
-                                      .map((chapter, index) => (
-                                        <li key={index}>• {chapter.title}</li>
-                                      ))}
-                                  </ul>
-                                </div>
-                              )}
-                          </div>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-sky-700 mb-2">
-                      Titlul capitolului <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={chapterData.chapterTitle}
-                      onChange={(e) =>
-                        setChapterData((prev) => ({
-                          ...prev,
-                          chapterTitle: e.target.value,
-                        }))
-                      }
-                      className="w-full px-4 py-2 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                      placeholder="Titlul noului capitol..."
+                      onChange={handleInputChange("bookId")}
+                      options={bookOptions}
                       required
                     />
                   </div>
+
+                  {selectedBook && (
+                    <div className="bg-sky-50 rounded-lg p-4 mb-6">
+                      <h3 className="font-semibold text-sky-800 mb-2">
+                        Cartea selectată: {selectedBook.title}
+                      </h3>
+                      <p className="text-sky-600 text-sm mb-2">
+                        Gen: {selectedBook.genre.name}
+                      </p>
+                      <p className="text-sky-600 text-sm">
+                        Capitole existente: {selectedBook.chapters?.length || 0}
+                      </p>
+                      {selectedBook.chapters &&
+                        selectedBook.chapters.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sky-600 text-sm font-medium">
+                              Ultimele capitole:
+                            </p>
+                            <ul className="text-sky-500 text-sm mt-1">
+                              {selectedBook.chapters
+                                .slice(-3)
+                                .map((chapter, index) => (
+                                  <li key={index}>• {chapter.title}</li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  <FormField
+                    label="Titlul capitolului"
+                    value={chapterData.chapterTitle}
+                    onChange={handleInputChange("chapterTitle")}
+                    placeholder="Titlul noului capitol..."
+                    required
+                  />
                 </div>
 
                 <div>
@@ -314,21 +276,17 @@ export default function CapitolPage() {
                       </p>
                     </div>
 
-                    <textarea
+                    <FormField
+                      type="textarea"
                       value={chapterData.content}
-                      onChange={(e) =>
-                        setChapterData((prev) => ({
-                          ...prev,
-                          content: e.target.value,
-                        }))
-                      }
-                      rows={20}
-                      className="w-full px-4 py-4 border-0 focus:ring-0 resize-none"
-                      placeholder="Continuarea poveștii tale...
+                      onChange={handleInputChange("content")}
+                      placeholder={`Continuarea poveștii tale...
 
 Scrie aici următorul capitol din cartea ta. Lasă imaginația să curgă liber și dezvoltă povestea în direcția dorită.
 
-Poți folosi paragrafe pentru a structura textul și a face lectura mai plăcută."
+Poți folosi paragrafe pentru a structura textul și a face lectura mai plăcută.`}
+                      rows={20}
+                      className="border-0 focus:ring-0 resize-none"
                       required
                     />
                   </div>

@@ -1,5 +1,9 @@
 import { useState } from "react";
 import Navigation from "../components/Navigation";
+import HeroSection from "../components/HeroSection";
+import FormField from "../components/FormField";
+import Button from "../components/Button";
+import FeatureCard from "../components/FeatureCard";
 import { useNavigation } from "../hooks/useNavigation";
 
 export default function ContactPage() {
@@ -26,6 +30,10 @@ export default function ContactPage() {
     setIsSubmitting(false);
   };
 
+  const handleInputChange = (field) => (e) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
   const contactMethods = [
     {
       icon: "📧",
@@ -50,6 +58,15 @@ export default function ContactPage() {
     },
   ];
 
+  const subjectOptions = [
+    { value: "", label: "Selectează subiectul" },
+    { value: "suport-tehnic", label: "Suport tehnic" },
+    { value: "sugestii", label: "Sugestii și feedback" },
+    { value: "colaborare", label: "Colaborare" },
+    { value: "raportare-problema", label: "Raportare problemă" },
+    { value: "altele", label: "Altele" },
+  ];
+
   const faqItems = [
     {
       question: "Cum pot publica o carte pe platformă?",
@@ -66,28 +83,18 @@ export default function ContactPage() {
       answer:
         "Utilizatorii înregistrați pot da rating de la 1 la 5 stele fiecărei cărți. Rating-ul mediu se calculează automat pe baza tuturor evaluărilor primite.",
     },
-    {
-      question: "Sunt gratuite toate funcționalitățile?",
-      answer:
-        "Da! Platforma Mica Mea Carte este complet gratuită. Poți citi, scrie și publica cărți fără niciun cost.",
-    },
   ];
 
   return (
     <div className="min-h-screen bg-sky-100">
       <Navigation />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-sky-900 mb-4">
-            Contactează-ne
-          </h1>
-          <p className="text-xl text-sky-700 max-w-3xl mx-auto">
-            Avem întrebări? Sugestii? Sau pur și simplu vrei să ne spui salut?
-            Suntem aici pentru tine!
-          </p>
-        </div>
 
+      <HeroSection
+        title="Contactează-ne"
+        subtitle="Avem întrebări? Sugestii? Sau pur și simplu vrei să ne spui salut? Suntem aici pentru tine!"
+      />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Formularul de contact */}
           <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -103,106 +110,56 @@ export default function ContactPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Numele tău *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    className="w-full px-4 py-3 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    placeholder="Introdu numele tău"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-sky-700 mb-2">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="w-full px-4 py-3 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                    placeholder="exemplu@email.com"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-sky-700 mb-2">
-                  Subiectul mesajului *
-                </label>
-                <select
+                <FormField
+                  label="Numele tău"
+                  value={formData.name}
+                  onChange={handleInputChange("name")}
+                  placeholder="Introdu numele tău"
                   required
-                  value={formData.subject}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      subject: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                   disabled={isSubmitting}
-                >
-                  <option value="">Selectează subiectul</option>
-                  <option value="suport-tehnic">Suport tehnic</option>
-                  <option value="sugestii">Sugestii și feedback</option>
-                  <option value="colaborare">Colaborare</option>
-                  <option value="raportare-problema">Raportare problemă</option>
-                  <option value="altele">Altele</option>
-                </select>
-              </div>
+                />
 
-              <div>
-                <label className="block text-sm font-medium text-sky-700 mb-2">
-                  Mesajul tău *
-                </label>
-                <textarea
+                <FormField
+                  label="Email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange("email")}
+                  placeholder="exemplu@email.com"
                   required
-                  rows={6}
-                  value={formData.message}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      message: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-3 border border-sky-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent resize-none"
-                  placeholder="Scrie mesajul tău aici..."
                   disabled={isSubmitting}
                 />
               </div>
 
-              <button
-                type="submit"
+              <FormField
+                label="Subiectul mesajului"
+                type="select"
+                value={formData.subject}
+                onChange={handleInputChange("subject")}
+                options={subjectOptions}
+                required
                 disabled={isSubmitting}
-                className="w-full bg-sky-600 text-white py-3 px-6 rounded-lg hover:bg-sky-700 disabled:bg-sky-400 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center"
+              />
+
+              <FormField
+                label="Mesajul tău"
+                type="textarea"
+                value={formData.message}
+                onChange={handleInputChange("message")}
+                placeholder="Scrie mesajul tău aici..."
+                rows={6}
+                required
+                disabled={isSubmitting}
+              />
+
+              <Button
+                type="submit"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                className="w-full"
+                icon="📤"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Se trimite...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">📤</span>
-                    Trimite mesajul
-                  </>
-                )}
-              </button>
+                Trimite mesajul
+              </Button>
             </form>
           </div>
 
@@ -215,24 +172,13 @@ export default function ContactPage() {
               </h2>
               <div className="space-y-6">
                 {contactMethods.map((method, index) => (
-                  <div
+                  <FeatureCard
                     key={index}
-                    className="flex items-start p-4 border border-sky-200 rounded-lg hover:bg-sky-50 transition-colors cursor-pointer"
+                    icon={method.icon}
+                    title={method.title}
+                    description={`${method.description}\n${method.contact}`}
                     onClick={method.action}
-                  >
-                    <div className="text-3xl mr-4">{method.icon}</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sky-900 mb-1">
-                        {method.title}
-                      </h3>
-                      <p className="text-sky-600 text-sm mb-2">
-                        {method.description}
-                      </p>
-                      <p className="text-sky-800 font-medium">
-                        {method.contact}
-                      </p>
-                    </div>
-                  </div>
+                  />
                 ))}
               </div>
             </div>
@@ -243,7 +189,7 @@ export default function ContactPage() {
                 Întrebări frecvente
               </h2>
               <div className="space-y-4">
-                {faqItems.slice(0, 3).map((item, index) => (
+                {faqItems.map((item, index) => (
                   <div
                     key={index}
                     className="border-b border-sky-200 pb-4 last:border-b-0"
@@ -255,12 +201,13 @@ export default function ContactPage() {
                   </div>
                 ))}
               </div>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => router.push("/despre-noi")}
-                className="mt-4 text-sky-600 hover:text-sky-800 font-medium transition-colors"
+                className="mt-4"
               >
                 Vezi toate întrebările →
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -275,18 +222,18 @@ export default function ContactPage() {
             contactezi pentru orice nelămurire!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
+            <Button
               onClick={() => router.push("/despre-noi")}
-              className="px-6 py-3 bg-white text-sky-600 font-semibold rounded-lg hover:bg-sky-50 transition-colors"
+              variant="secondary"
             >
               Despre noi
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => router.push("/descopera")}
-              className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-lg hover:bg-sky-400 transition-colors"
+              className="bg-sky-500 hover:bg-sky-400"
             >
               Explorează cărțile
-            </button>
+            </Button>
           </div>
         </div>
       </div>
