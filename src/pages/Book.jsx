@@ -1,10 +1,10 @@
-import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useNavigation } from "../hooks/useNavigation";
-import Navigation from "../components/Navigation";
-import { defaultBooks } from "./Descopera";
-import { getBooks, getBooksLocal } from "../utils/Book-Storage";
-import { useAuth } from "../context/Auth-context";
+
+import { useParams } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigation } from "../hooks/useNavigation"
+import Navigation from "../components/Navigation"
+import { getBooks, getBooksLocal, getAllPublicBooks } from "../utils/Book-Storage"
+import { useAuth } from "../context/Auth-context"
 
 const extendedBookDetails = {
   "În numele trandafirului": {
@@ -43,36 +43,43 @@ const extendedBookDetails = {
     fullDescription:
       "Romanul lui Marin Preda este o frescă monumentală a vieții rurale românești din perioada interbelică și de după război. Prin familia Moromete, autorul surprinde transformările sociale și politice care au marcat România secolului XX. Ilie Moromete devine un simbol al țăranului român, cu înțelepciunea și demnitatea sa, confruntat cu schimbările istorice majore. Romanul este considerat una dintre cele mai importante opere ale literaturii române contemporane.",
   },
-};
+}
 
 export default function BookPage() {
-  const { id } = useParams();
-  const router = useNavigation();
-  const { user } = useAuth();
-  const [userBooks, setUserBooks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { id } = useParams()
+  const router = useNavigation()
+  const { user } = useAuth()
+  const [userBooks, setUserBooks] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [publicBooks, setPublicBooks] = useState([])
 
   useEffect(() => {
     const loadBooks = async () => {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
-        let books = [];
-        if (user) {
-          books = await getBooks(user.uid);
-        } else {
-          books = getBooksLocal();
-        }
-        setUserBooks(Array.isArray(books) ? books : []);
-      } catch (error) {
-        console.error("Eroare la încărcarea cărților:", error);
-        setUserBooks([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        // Încarcă cărțile publice
+        const allPublicBooks = await getAllPublicBooks()
+        setPublicBooks(allPublicBooks)
 
-    loadBooks();
-  }, [user, id]);
+        // Încarcă cărțile utilizatorului
+        let books = []
+        if (user) {
+          books = await getBooks(user.uid)
+        } else {
+          books = getBooksLocal()
+        }
+        setUserBooks(Array.isArray(books) ? books : [])
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error)
+        setUserBooks([])
+        setPublicBooks([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadBooks()
+  }, [user, id])
 
   if (isLoading) {
     return (
@@ -85,14 +92,12 @@ export default function BookPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const allBooks = [...defaultBooks, ...userBooks];
-  const book = allBooks.find((b) => b.id.toString() === id);
-  const isUserBook = userBooks.some(
-    (userBook) => userBook.id.toString() === id
-  );
+  const allBooks = [...publicBooks, ...userBooks]
+  const book = allBooks.find((b) => b.id.toString() === id)
+  const isUserBook = userBooks.some((userBook) => userBook.id.toString() === id)
 
   if (!book) {
     return (
@@ -101,13 +106,8 @@ export default function BookPage() {
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <span className="text-6xl mb-4 block">📚</span>
-            <h1 className="text-2xl font-bold text-sky-900 mb-4">
-              Cartea nu a fost găsită
-            </h1>
-            <p className="text-sky-600 mb-6">
-              Ne pare rău, dar cartea pe care o cauți nu există în colecția
-              noastră.
-            </p>
+            <h1 className="text-2xl font-bold text-sky-900 mb-4">Cartea nu a fost găsită</h1>
+            <p className="text-sky-600 mb-6">Ne pare rău, dar cartea pe care o cauți nu există în colecția noastră.</p>
             <button
               onClick={() => router.push("/descopera")}
               className="px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors"
@@ -117,10 +117,10 @@ export default function BookPage() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  const extendedDetails = extendedBookDetails[book.title] || {};
+  const extendedDetails = extendedBookDetails[book.title] || {}
 
   return (
     <div className="min-h-screen bg-sky-100">
@@ -156,29 +156,21 @@ export default function BookPage() {
 
             <div className="md:w-2/3 p-8">
               <div className="mb-4">
-                <span className="px-3 py-1 bg-sky-100 text-sky-700 text-sm rounded-full">
-                  {book.genre.name}
-                </span>
+                <span className="px-3 py-1 bg-sky-100 text-sky-700 text-sm rounded-full">{book.genre.name}</span>
               </div>
 
-              <h1 className="text-4xl font-bold text-sky-900 mb-4">
-                {book.title}
-              </h1>
+              <h1 className="text-4xl font-bold text-sky-900 mb-4">{book.title}</h1>
               <p className="text-xl text-sky-600 mb-6">de {book.author}</p>
 
               <div className="flex items-center space-x-6 mb-6 flex-wrap gap-y-2">
                 <div className="flex items-center text-yellow-500">
                   <span>⭐</span>
-                  <span className="ml-2 text-lg font-medium text-sky-700">
-                    {book.rating}
-                  </span>
+                  <span className="ml-2 text-lg font-medium text-sky-700">{book.rating}</span>
                 </div>
 
                 <div className="flex items-center text-sky-500">
                   <span>👁</span>
-                  <span className="ml-2">
-                    {book.views?.toLocaleString() || "0"} cititori
-                  </span>
+                  <span className="ml-2">{book.views?.toLocaleString() || "0"} cititori</span>
                 </div>
 
                 {extendedDetails.pages && (
@@ -191,43 +183,32 @@ export default function BookPage() {
                 <div className="flex items-center text-sky-500">
                   <span>📅</span>
                   <span className="ml-2">
-                    {extendedDetails.publishYear ||
-                      new Date(book.publishDate).getFullYear()}
+                    {extendedDetails.publishYear || new Date(book.publishDate).getFullYear()}
                   </span>
                 </div>
 
                 {isUserBook && book.chapters && (
                   <div className="flex items-center text-sky-500">
                     <span>📖</span>
-                    <span className="ml-2">
-                      {book.chapters.length} capitole
-                    </span>
+                    <span className="ml-2">{book.chapters.length} capitole</span>
                   </div>
                 )}
               </div>
 
               <p className="text-sky-700 mb-6 leading-relaxed">
-                {book.description ||
-                  "O poveste captivantă care te va ține cu sufletul la gură."}
+                {book.description || "O poveste captivantă care te va ține cu sufletul la gură."}
               </p>
 
               {extendedDetails.fullDescription && (
-                <p className="text-sky-600 mb-8 leading-relaxed">
-                  {extendedDetails.fullDescription}
-                </p>
+                <p className="text-sky-600 mb-8 leading-relaxed">{extendedDetails.fullDescription}</p>
               )}
 
               {isUserBook && book.chapters && (
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-sky-900 mb-3">
-                    Capitole disponibile:
-                  </h3>
+                  <h3 className="text-lg font-semibold text-sky-900 mb-3">Capitole disponibile:</h3>
                   <div className="space-y-2">
                     {book.chapters.slice(0, 3).map((chapter, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center text-sky-600"
-                      >
+                      <div key={index} className="flex items-center text-sky-600">
                         <span className="mr-2">📖</span>
                         <span>
                           Capitol {index + 1}: {chapter.title}
@@ -235,9 +216,7 @@ export default function BookPage() {
                       </div>
                     ))}
                     {book.chapters.length > 3 && (
-                      <div className="text-sky-500 text-sm">
-                        ... și încă {book.chapters.length - 3} capitole
-                      </div>
+                      <div className="text-sky-500 text-sm">... și încă {book.chapters.length - 3} capitole</div>
                     )}
                   </div>
                 </div>
@@ -270,16 +249,10 @@ export default function BookPage() {
         </div>
 
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-sky-900 mb-6">
-            Cărți similare din genul {book.genre.name}
-          </h2>
+          <h2 className="text-2xl font-bold text-sky-900 mb-6">Cărți similare din genul {book.genre.name}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {allBooks
-              .filter(
-                (similarBook) =>
-                  similarBook.genre.slug === book.genre.slug &&
-                  similarBook.id !== book.id
-              )
+              .filter((similarBook) => similarBook.genre.slug === book.genre.slug && similarBook.id !== book.id)
               .slice(0, 4)
               .map((similarBook, index) => (
                 <div
@@ -289,34 +262,23 @@ export default function BookPage() {
                 >
                   <div className="aspect-[3/4] bg-gradient-to-br from-sky-200 to-blue-300 flex items-center justify-center">
                     <img
-                      src={
-                        similarBook.cover ||
-                        "/placeholder.svg?height=300&width=200"
-                      }
+                      src={similarBook.cover || "/placeholder.svg?height=300&width=200"}
                       alt={similarBook.title}
                       className="w-full h-full object-cover"
                     />
                   </div>
 
                   <div className="p-4">
-                    <h3 className="text-sm font-bold text-sky-900 mb-1 line-clamp-2">
-                      {similarBook.title}
-                    </h3>
-                    <p className="text-sky-600 text-xs mb-2">
-                      de {similarBook.author}
-                    </p>
+                    <h3 className="text-sm font-bold text-sky-900 mb-1 line-clamp-2">{similarBook.title}</h3>
+                    <p className="text-sky-600 text-xs mb-2">de {similarBook.author}</p>
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center text-yellow-500">
                         <span>⭐</span>
-                        <span className="ml-1 text-sky-700">
-                          {similarBook.rating}
-                        </span>
+                        <span className="ml-1 text-sky-700">{similarBook.rating}</span>
                       </div>
                       <div className="flex items-center text-sky-500">
                         <span>👁</span>
-                        <span className="ml-1">
-                          {similarBook.views?.toLocaleString() || "0"}
-                        </span>
+                        <span className="ml-1">{similarBook.views?.toLocaleString() || "0"}</span>
                       </div>
                     </div>
                   </div>
@@ -324,15 +286,10 @@ export default function BookPage() {
               ))}
           </div>
 
-          {allBooks.filter(
-            (similarBook) =>
-              similarBook.genre.slug === book.genre.slug &&
-              similarBook.id !== book.id
-          ).length === 0 && (
+          {allBooks.filter((similarBook) => similarBook.genre.slug === book.genre.slug && similarBook.id !== book.id)
+            .length === 0 && (
             <div className="text-center py-8">
-              <p className="text-sky-600">
-                Nu există alte cărți disponibile în acest gen momentan.
-              </p>
+              <p className="text-sky-600">Nu există alte cărți disponibile în acest gen momentan.</p>
               <button
                 onClick={() => router.push("/descopera")}
                 className="mt-4 px-6 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
@@ -344,5 +301,5 @@ export default function BookPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

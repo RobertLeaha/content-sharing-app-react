@@ -8,13 +8,13 @@ import {
   query,
   where,
   orderBy,
-  getDoc, // Importing getDoc to fix the undeclared variable error
+  getDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 // Funcție helper pentru a obține ID-ul utilizatorului curent
 const getCurrentUserId = () => {
-  // Această funcție va fi apelată din componente care au acces la useAuth
   const auth = typeof window !== "undefined" ? window.currentUser : null;
   return auth?.uid || null;
 };
@@ -32,8 +32,10 @@ export const saveBook = async (bookData, userId) => {
       ...bookData,
       userId: userId,
       publishDate: new Date().toISOString().split("T")[0],
-      views: Math.floor(Math.random() * 1000),
-      rating: (Math.random() * 2 + 3).toFixed(1),
+      views: 0, // Începe cu 0 vizualizări
+      totalRating: 0, // Suma tuturor rating-urilor
+      ratingCount: 0, // Numărul de rating-uri
+      averageRating: 0, // Rating-ul mediu calculat
       author: "Tu",
       genre: {
         slug: bookData.genre,
@@ -42,6 +44,7 @@ export const saveBook = async (bookData, userId) => {
       cover: "/placeholder.svg?height=300&width=200",
       createdAt: new Date(),
       updatedAt: new Date(),
+      isPublic: true, // Cartea este publică implicit
     };
 
     const docRef = await addDoc(collection(db, "books"), newBook);
@@ -53,6 +56,38 @@ export const saveBook = async (bookData, userId) => {
   } catch (error) {
     console.error("Eroare la salvarea cărții în Firestore:", error);
     throw error;
+  }
+};
+
+// Obține toate cărțile publice (pentru toți utilizatorii)
+export const getAllPublicBooks = async () => {
+  try {
+    const q = query(
+      collection(db, "books"),
+      where("isPublic", "==", true),
+      orderBy("createdAt", "desc")
+    );
+
+    const querySnapshot = await getDocs(q);
+    const books = [];
+
+    querySnapshot.forEach((doc) => {
+      const bookData = doc.data();
+      books.push({
+        id: doc.id,
+        ...bookData,
+        // Calculează rating-ul mediu
+        rating:
+          bookData.ratingCount > 0
+            ? (bookData.totalRating / bookData.ratingCount).toFixed(1)
+            : 0,
+      });
+    });
+
+    return books;
+  } catch (error) {
+    console.error("Eroare la citirea cărților publice din Firestore:", error);
+    return [];
   }
 };
 
@@ -73,9 +108,15 @@ export const getBooks = async (userId) => {
     const books = [];
 
     querySnapshot.forEach((doc) => {
+      const bookData = doc.data();
       books.push({
         id: doc.id,
-        ...doc.data(),
+        ...bookData,
+        // Calculează rating-ul mediu
+        rating:
+          bookData.ratingCount > 0
+            ? (bookData.totalRating / bookData.ratingCount).toFixed(1)
+            : 0,
       });
     });
 
@@ -83,6 +124,109 @@ export const getBooks = async (userId) => {
   } catch (error) {
     console.error("Eroare la citirea cărților din Firestore:", error);
     return [];
+  }
+};
+
+// Incrementează numărul de vizualizări pentru o carte
+export const incrementBookViews = async (bookId) => {
+  try {
+    const bookRef = doc(db, "books", bookId);
+    await updateDoc(bookRef, {
+      views: increment(1),
+      updatedAt: new Date(),
+    });
+    return true;
+  } catch (error) {
+    console.error("Eroare la incrementarea vizualizărilor:", error);
+    return false;
+  }
+};
+
+// Adaugă sau actualizează rating-ul pentru o carte
+export const rateBook = async (bookId, rating, userId) => {
+  try {
+    if (!userId) {
+      throw new Error(
+        "Utilizatorul trebuie să fie autentificat pentru a da rating"
+      );
+    }
+
+    if (rating < 1 || rating > 5) {
+      throw new Error("Rating-ul trebuie să fie între 1 și 5");
+    }
+
+    // Verifică dacă utilizatorul a mai dat rating acestei cărți
+    const ratingsQuery = query(
+      collection(db, "ratings"),
+      where("bookId", "==", bookId),
+      where("userId", "==", userId)
+    );
+
+    const existingRatings = await getDocs(ratingsQuery);
+
+    if (!existingRatings.empty) {
+      // Actualizează rating-ul existent
+      const existingRatingDoc = existingRatings.docs[0];
+      const oldRating = existingRatingDoc.data().rating;
+
+      await updateDoc(doc(db, "ratings", existingRatingDoc.id), {
+        rating: rating,
+        updatedAt: new Date(),
+      });
+
+      // Actualizează totalul în cartea principală
+      const bookRef = doc(db, "books", bookId);
+      await updateDoc(bookRef, {
+        totalRating: increment(rating - oldRating),
+        updatedAt: new Date(),
+      });
+    } else {
+      // Adaugă un rating nou
+      await addDoc(collection(db, "ratings"), {
+        bookId: bookId,
+        userId: userId,
+        rating: rating,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Actualizează cartea principală
+      const bookRef = doc(db, "books", bookId);
+      await updateDoc(bookRef, {
+        totalRating: increment(rating),
+        ratingCount: increment(1),
+        updatedAt: new Date(),
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Eroare la adăugarea rating-ului:", error);
+    throw error;
+  }
+};
+
+// Obține rating-ul dat de utilizatorul curent pentru o carte
+export const getUserRating = async (bookId, userId) => {
+  try {
+    if (!userId) return null;
+
+    const ratingsQuery = query(
+      collection(db, "ratings"),
+      where("bookId", "==", bookId),
+      where("userId", "==", userId)
+    );
+
+    const querySnapshot = await getDocs(ratingsQuery);
+
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data().rating;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Eroare la citirea rating-ului utilizatorului:", error);
+    return null;
   }
 };
 
@@ -95,6 +239,19 @@ export const deleteBook = async (bookId, userId) => {
       );
     }
 
+    // Șterge toate rating-urile asociate cărții
+    const ratingsQuery = query(
+      collection(db, "ratings"),
+      where("bookId", "==", bookId)
+    );
+    const ratingsSnapshot = await getDocs(ratingsQuery);
+
+    const deletePromises = ratingsSnapshot.docs.map((doc) =>
+      deleteDoc(doc.ref)
+    );
+    await Promise.all(deletePromises);
+
+    // Șterge cartea
     await deleteDoc(doc(db, "books", bookId));
     return true;
   } catch (error) {
@@ -132,9 +289,15 @@ export const getBookById = async (bookId) => {
     const bookSnap = await getDoc(bookRef);
 
     if (bookSnap.exists()) {
+      const bookData = bookSnap.data();
       return {
         id: bookSnap.id,
-        ...bookSnap.data(),
+        ...bookData,
+        // Calculează rating-ul mediu
+        rating:
+          bookData.ratingCount > 0
+            ? (bookData.totalRating / bookData.ratingCount).toFixed(1)
+            : 0,
       };
     } else {
       return null;
@@ -169,14 +332,17 @@ export const saveBookLocal = (bookData) => {
       id: Date.now().toString(),
       ...bookData,
       publishDate: new Date().toISOString().split("T")[0],
-      views: Math.floor(Math.random() * 1000),
-      rating: (Math.random() * 2 + 3).toFixed(1),
+      views: 0,
+      totalRating: 0,
+      ratingCount: 0,
+      averageRating: 0,
       author: "Tu",
       genre: {
         slug: bookData.genre,
         name: getGenreName(bookData.genre),
       },
       cover: "/placeholder.svg?height=300&width=200",
+      isPublic: false, // Cărțile locale nu sunt publice
     };
 
     const updatedBooks = [...existingBooks, newBook];

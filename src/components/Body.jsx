@@ -1,53 +1,97 @@
+import { useState, useEffect } from "react";
 import { useNavigation } from "../hooks/useNavigation";
-
-const topBooks = [
-  {
-    id: "default-1",
-    title: "În numele trandafirului",
-    author: "Umberto Eco",
-    rating: 4.8,
-    views: 15420,
-    genre: "Mister",
-    cover: "/placeholder.svg?height=300&width=200",
-    description:
-      "O capodoperă a literaturii contemporane care îmbină misterul cu filosofia medievală.",
-  },
-  {
-    id: "default-2",
-    title: "Maitreyi",
-    author: "Mircea Eliade",
-    rating: 4.6,
-    views: 12350,
-    genre: "Romantism",
-    cover: "/placeholder.svg?height=300&width=200",
-    description:
-      "O poveste de dragoste transcendentală inspirată din experiența autorului în India.",
-  },
-  {
-    id: "default-3",
-    title: "Ion",
-    author: "Liviu Rebreanu",
-    rating: 4.4,
-    views: 9870,
-    genre: "Dramă",
-    cover: "/placeholder.svg?height=300&width=200",
-    description:
-      "Romanul pământului și al patimilor umane din literatura română clasică.",
-  },
-];
+import { getAllPublicBooks } from "../utils/Book-Storage";
 
 export default function Body() {
+  const [topBooks, setTopBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useNavigation();
+
+  useEffect(() => {
+    const loadTopBooks = async () => {
+      try {
+        const publicBooks = await getAllPublicBooks();
+        // Sortează după vizualizări și ia primele 3
+        const sortedBooks = publicBooks
+          .sort(
+            (a, b) =>
+              (Number.parseFloat(b.rating) || 0) -
+              (Number.parseFloat(a.rating) || 0)
+          )
+          .slice(0, 3);
+        setTopBooks(sortedBooks);
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTopBooks();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="bg-sky-100 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-sky-900 mb-4">
+              Cărțile cu rating-ul cel mai mare
+            </h2>
+            <p className="text-sky-700 text-lg">
+              Descoperă cărțile cel mai bine evaluate de comunitatea noastră
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-sky-600">Se încarcă cărțile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (topBooks.length === 0) {
+    return (
+      <div className="bg-sky-100 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-sky-900 mb-4">
+              Cărțile cu rating-ul cel mai mare
+            </h2>
+            <p className="text-sky-700 text-lg">
+              Descoperă cărțile cel mai bine evaluate de comunitatea noastră
+            </p>
+          </div>
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📚</div>
+            <h3 className="text-2xl font-bold text-sky-900 mb-4">
+              Încă nu există cărți publicate
+            </h3>
+            <p className="text-sky-600 mb-6">
+              Fii primul care publică o carte pe platforma noastră!
+            </p>
+            <button
+              onClick={() => router.push("/scrie-carte")}
+              className="px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors"
+            >
+              Scrie prima carte
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-sky-100 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-sky-900 mb-4">
-            Cele mai citite cărți
+            Cărțile cu rating-ul cel mai mare
           </h2>
           <p className="text-sky-700 text-lg">
-            Descoperă cărțile preferate ale comunității noastre
+            Descoperă cărțile cel mai bine evaluate de comunitatea noastră
           </p>
         </div>
 
@@ -69,12 +113,12 @@ export default function Body() {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="px-3 py-1 bg-sky-100 text-sky-700 text-sm rounded-full">
-                    {book.genre}
+                    {book.genre.name}
                   </span>
                   <div className="flex items-center text-yellow-500">
                     <span>⭐</span>
                     <span className="ml-1 text-sm font-medium text-sky-700">
-                      {book.rating}
+                      {book.rating > 0 ? book.rating : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -84,19 +128,31 @@ export default function Body() {
                 </h3>
                 <p className="text-sky-600 mb-3">de {book.author}</p>
                 <p className="text-sky-700 text-sm mb-4 line-clamp-2">
-                  {book.description}
+                  {book.description ||
+                    "O poveste captivantă care te va ține cu sufletul la gură."}
                 </p>
 
                 <div className="flex items-center text-sky-500 text-sm">
                   <span>👁</span>
                   <span className="ml-1">
-                    {book.views.toLocaleString()} cititori
+                    {(book.views || 0).toLocaleString()} cititori
                   </span>
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        {topBooks.length > 0 && (
+          <div className="text-center mt-12">
+            <button
+              onClick={() => router.push("/descopera")}
+              className="px-8 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors"
+            >
+              Vezi toate cărțile
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

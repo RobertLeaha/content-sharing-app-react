@@ -2,63 +2,51 @@ import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
-import { getBooks, getBooksLocal } from "../utils/Book-Storage";
-import { defaultBooks } from "./Descopera";
-import { defaultBooksContent } from "../data/defaultBooksContent";
+import RatingComponent from "../components/RatingComponent";
+import { getBookById, incrementBookViews } from "../utils/Book-Storage";
 import { useAuth } from "../context/Auth-context";
 
 export default function ReadPage() {
   const { id } = useParams();
   const router = useNavigation();
   const { user } = useAuth();
-  const [userBooks, setUserBooks] = useState([]);
+  const [book, setBook] = useState(null);
   const [currentChapter, setCurrentChapter] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasIncrementedViews, setHasIncrementedViews] = useState(false);
 
   useEffect(() => {
-    const loadBooksAndFindCurrent = async () => {
+    const loadBook = async () => {
       setIsLoading(true);
       try {
-        let books = [];
-        if (user) {
-          books = await getBooks(user.uid);
-        } else {
-          books = getBooksLocal();
+        const bookData = await getBookById(id);
+        setBook(bookData);
+
+        // Incrementează vizualizările doar o dată per sesiune
+        if (bookData && !hasIncrementedViews) {
+          await incrementBookViews(id);
+          setHasIncrementedViews(true);
         }
-        setUserBooks(Array.isArray(books) ? books : []);
       } catch (error) {
-        console.error("Eroare la încărcarea cărților:", error);
-        setUserBooks([]);
+        console.error("Eroare la încărcarea cărții:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadBooksAndFindCurrent();
-  }, [user, id]);
+    if (id) {
+      loadBook();
+    }
+  }, [id, hasIncrementedViews]);
 
-  const allBooks = [
-    ...(defaultBooks || []),
-    ...(Array.isArray(userBooks) ? userBooks : []),
-  ];
-
-  const book = allBooks.find((b) => b.id.toString() === id);
-
-  const createDemoContent = (bookTitle) => {
-    return (
-      defaultBooksContent[bookTitle] || [
-        {
-          title: "Capitolul 1: Previzualizare",
-          content: `Aceasta este o previzualizare pentru cartea "${bookTitle}". 
-
-În această versiune demo, conținutul complet al cărții nu este disponibil, dar poți vedea cum arăta experiența de lectură.
-
-Cartea originală conține multiple capitole cu povești captivante și personaje memorabile care te vor ține cu sufletul la gură.
-
-Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau digitală a cărții din librăriile partenere.`,
-        },
-      ]
-    );
+  const handleRatingUpdate = async () => {
+    // Reîncarcă cartea pentru a obține rating-ul actualizat
+    try {
+      const updatedBook = await getBookById(id);
+      setBook(updatedBook);
+    } catch (error) {
+      console.error("Eroare la actualizarea rating-ului:", error);
+    }
   };
 
   if (isLoading) {
@@ -101,11 +89,8 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
     );
   }
 
-  const chapters = book.chapters || createDemoContent(book.title);
-
-  const isUserBook = (Array.isArray(userBooks) ? userBooks : []).some(
-    (userBook) => userBook.id === book.id
-  );
+  const chapters = book.chapters || [];
+  const isUserBook = user && book.userId === user.uid;
 
   return (
     <div className="min-h-screen bg-sky-100">
@@ -138,6 +123,10 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
                 <span className="px-3 py-1 bg-sky-500 text-white text-sm rounded-full">
                   {book.genre.name}
                 </span>
+                <div className="flex items-center text-sky-100">
+                  <span>👁</span>
+                  <span className="ml-1 text-sm">{book.views || 0}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -180,38 +169,47 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Conținutul capitolului */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
           <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-6 border-b border-sky-200">
             <h2 className="text-2xl font-bold text-sky-900 mb-2">
-              {chapters[currentChapter]?.title}
+              {chapters[currentChapter]?.title || "Conținut"}
             </h2>
             <div className="flex items-center space-x-4 text-sm text-sky-600">
               <span>📖 Capitol {currentChapter + 1}</span>
               <span>
                 ⏱ ~
                 {Math.ceil(
-                  chapters[currentChapter]?.content.split(" ").length / 200
+                  (chapters[currentChapter]?.content?.split(" ").length || 0) /
+                    200
                 )}{" "}
                 min citire
               </span>
               <span>
-                📝 {chapters[currentChapter]?.content.split(" ").length} cuvinte
+                📝 {chapters[currentChapter]?.content?.split(" ").length || 0}{" "}
+                cuvinte
               </span>
             </div>
           </div>
 
           <div className="p-8">
             <div className="prose prose-lg max-w-none">
-              {chapters[currentChapter]?.content
-                .split("\n\n")
-                .map((paragraph, index) => (
-                  <p
-                    key={index}
-                    className="text-sky-800 leading-relaxed mb-6 text-justify"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
+              {chapters[currentChapter]?.content ? (
+                chapters[currentChapter].content
+                  .split("\n\n")
+                  .map((paragraph, index) => (
+                    <p
+                      key={index}
+                      className="text-sky-800 leading-relaxed mb-6 text-justify"
+                    >
+                      {paragraph}
+                    </p>
+                  ))
+              ) : (
+                <p className="text-sky-600 text-center py-8">
+                  Această carte nu are încă conținut disponibil.
+                </p>
+              )}
             </div>
           </div>
 
@@ -221,7 +219,11 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-sky-600">Progres lectură</span>
                   <span className="text-sm text-sky-600">
-                    {Math.round(((currentChapter + 1) / chapters.length) * 100)}
+                    {chapters.length > 0
+                      ? Math.round(
+                          ((currentChapter + 1) / chapters.length) * 100
+                        )
+                      : 0}
                     %
                   </span>
                 </div>
@@ -230,7 +232,9 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
                     className="bg-sky-600 h-2 rounded-full transition-all duration-300"
                     style={{
                       width: `${
-                        ((currentChapter + 1) / chapters.length) * 100
+                        chapters.length > 0
+                          ? ((currentChapter + 1) / chapters.length) * 100
+                          : 0
                       }%`,
                     }}
                   ></div>
@@ -255,23 +259,13 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
           </div>
         </div>
 
-        {!isUserBook && (
-          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-6">
-            <div className="flex items-start">
-              <span className="text-2xl mr-3">ℹ️</span>
-              <div>
-                <h3 className="font-semibold text-amber-800 mb-2">
-                  Previzualizare limitată
-                </h3>
-                <p className="text-amber-700">
-                  Aceasta este o previzualizare pentru cartea "{book.title}".
-                  Pentru conținutul complet, te rugăm să accesezi versiunea
-                  fizică sau digitală a cărții.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Componenta de rating */}
+        <RatingComponent
+          bookId={book.id}
+          currentRating={book.rating}
+          ratingCount={book.ratingCount}
+          onRatingUpdate={handleRatingUpdate}
+        />
       </div>
     </div>
   );

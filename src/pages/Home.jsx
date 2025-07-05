@@ -1,6 +1,7 @@
 import Navigation from "../components/Navigation";
 import Header from "../components/Header";
 import Body from "../components/Body";
+import Footer from "../components/Footer";
 
 export default function HomePage() {
   return (
@@ -8,7 +9,7 @@ export default function HomePage() {
       <Navigation />
       <Header />
       <Body />
-          
+      <Footer />
     </div>
   );
 }

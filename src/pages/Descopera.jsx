@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import { useNavigation } from "../hooks/useNavigation";
@@ -7,83 +6,20 @@ import {
   deleteBook,
   getBooksLocal,
   deleteBookLocal,
+  getAllPublicBooks,
 } from "../utils/Book-Storage";
 import { useAuth } from "../context/Auth-context";
-import { debugFirestore } from "../utils/firestore-debug";
-
-export const defaultBooks = [
-  {
-    id: "default-1",
-    title: "În numele trandafirului",
-    author: "Umberto Eco",
-    rating: 4.8,
-    views: 15420,
-    genre: { slug: "mystery", name: "Mister" },
-    publishDate: "2023-12-15",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-  {
-    id: "default-2",
-    title: "Maitreyi",
-    author: "Mircea Eliade",
-    rating: 4.6,
-    views: 12350,
-    genre: { slug: "romance", name: "Romantism" },
-    publishDate: "2023-11-20",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-  {
-    id: "default-3",
-    title: "Ion",
-    author: "Liviu Rebreanu",
-    rating: 4.4,
-    views: 9870,
-    genre: { slug: "drama", name: "Drama" },
-    publishDate: "2023-10-05",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-  {
-    id: "default-4",
-    title: "Baltagul",
-    author: "Mihail Sadoveanu",
-    rating: 4.7,
-    views: 11200,
-    genre: { slug: "drama", name: "Drama" },
-    publishDate: "2023-09-12",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-  {
-    id: "default-5",
-    title: "Enigma Otiliei",
-    author: "George Călinescu",
-    rating: 4.3,
-    views: 8900,
-    genre: { slug: "romance", name: "Romantic" },
-    publishDate: "2023-08-30",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-  {
-    id: "default-6",
-    title: "Moromeții",
-    author: "Marin Preda",
-    rating: 4.5,
-    views: 10500,
-    genre: { slug: "drama", name: "Drama" },
-    publishDate: "2023-07-18",
-    cover: "/placeholder.svg?height=300&width=200",
-  },
-];
 
 export const genres = [
-  { slug: "action", name: "Actiune" },
-  { slug: "adventure", name: "Aventura" },
-  { slug: "drama", name: "Drama" },
+  { slug: "action", name: "Acțiune" },
+  { slug: "adventure", name: "Aventură" },
+  { slug: "drama", name: "Dramă" },
   { slug: "romance", name: "Romantism" },
   { slug: "fantasy", name: "Fantasy" },
   { slug: "sf", name: "Sci-Fi" },
-  { slug: "non-fiction", name: "Non-Fictiune" },
   { slug: "horror", name: "Horror" },
   { slug: "mystery", name: "Mister" },
+  { slug: "thriller", name: "Thriller" },
 ];
 
 export default function DescoperaPage() {
@@ -92,6 +28,7 @@ export default function DescoperaPage() {
   const [sortBy, setSortBy] = useState("views");
   const [sortOrder, setSortOrder] = useState("desc");
   const [userBooks, setUserBooks] = useState([]);
+  const [publicBooks, setPublicBooks] = useState([]);
   const [showUserBooksOnly, setShowUserBooksOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useNavigation();
@@ -101,13 +38,18 @@ export default function DescoperaPage() {
     const loadBooks = async () => {
       setIsLoading(true);
       try {
-        let books = [];
+        // Încarcă cărțile publice
+        const allPublicBooks = await getAllPublicBooks();
+        setPublicBooks(allPublicBooks);
+
+        // Încarcă cărțile utilizatorului
+        let userBooksData = [];
         if (user) {
-          books = await getBooks(user.uid);
+          userBooksData = await getBooks(user.uid);
         } else {
-          books = getBooksLocal();
+          userBooksData = getBooksLocal();
         }
-        setUserBooks(books);
+        setUserBooks(userBooksData);
       } catch (error) {
         console.error("Eroare la încărcarea cărților:", error);
       } finally {
@@ -120,7 +62,12 @@ export default function DescoperaPage() {
 
   const allBooks = showUserBooksOnly
     ? userBooks
-    : [...defaultBooks, ...userBooks];
+    : [
+        ...publicBooks,
+        ...userBooks.filter(
+          (book) => !publicBooks.some((pb) => pb.id === book.id)
+        ),
+      ];
 
   const filteredAndSortedBooks = allBooks
     .filter((book) => {
@@ -136,10 +83,12 @@ export default function DescoperaPage() {
 
       switch (sortBy) {
         case "views":
-          comparison = a.views - b.views;
+          comparison = (a.views || 0) - (b.views || 0);
           break;
         case "rating":
-          comparison = a.rating - b.rating;
+          comparison =
+            (Number.parseFloat(a.rating) || 0) -
+            (Number.parseFloat(b.rating) || 0);
           break;
         case "date":
           comparison = new Date(a.publishDate) - new Date(b.publishDate);
@@ -173,6 +122,9 @@ export default function DescoperaPage() {
 
         if (success) {
           // Reîncarcă cărțile după ștergere
+          const allPublicBooks = await getAllPublicBooks();
+          setPublicBooks(allPublicBooks);
+
           if (user) {
             const updatedBooks = await getBooks(user.uid);
             setUserBooks(updatedBooks);
@@ -210,26 +162,14 @@ export default function DescoperaPage() {
 
   return (
     <div className="min-h-screen bg-sky-100">
-      <Navigation>
-        {user && process.env.NODE_ENV === "development" && (
-          <button
-            onClick={async () => {
-              console.log("🔍 Începe debugging...");
-              await debugFirestore(user.uid);
-            }}
-            className="px-3 py-1 bg-red-500 text-white text-xs rounded"
-          >
-            Debug Firestore
-          </button>
-        )}
-      </Navigation>
+      <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-sky-900 mb-4">
             Descoperă cărți
           </h1>
           <p className="text-sky-700 text-lg">
-            Explorează colecția noastră completă de cărți publicate
+            Explorează colecția de cărți scrise de comunitatea noastră
           </p>
           {!user && userBooks.length > 0 && (
             <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -251,7 +191,16 @@ export default function DescoperaPage() {
                   : "text-sky-600 hover:bg-sky-50"
               }`}
             >
-              Toate cărțile ({allBooks.length})
+              Toate cărțile (
+              {
+                [
+                  ...publicBooks,
+                  ...userBooks.filter(
+                    (book) => !publicBooks.some((pb) => pb.id === book.id)
+                  ),
+                ].length
+              }
+              )
             </button>
             <button
               onClick={() => setShowUserBooksOnly(true)}
@@ -367,7 +316,7 @@ export default function DescoperaPage() {
                   <div className="flex items-center text-yellow-500">
                     <span>⭐</span>
                     <span className="ml-1 text-xs font-medium text-sky-700">
-                      {book.rating || "N/A"}
+                      {book.rating > 0 ? book.rating : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -381,7 +330,7 @@ export default function DescoperaPage() {
                   <div className="flex items-center">
                     <span>👁</span>
                     <span className="ml-1">
-                      {book.views?.toLocaleString() || "0"}
+                      {(book.views || 0).toLocaleString()}
                     </span>
                   </div>
 

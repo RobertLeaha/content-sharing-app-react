@@ -13,6 +13,8 @@ import GenresPage from "./pages/Genres.jsx";
 import CapitolPage from "./pages/Capitol.jsx";
 import ScrieCartePage from "./pages/Scrie-carte.jsx";
 import ReadPage from "./pages/Read.jsx";
+import ContactPage from "./pages/Contact.jsx";
+import DesprePage from "./pages/Despre-noi.jsx";
 
 const App = () => (
   <StrictMode>
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/capitol" element={<CapitolPage />} />
           <Route path="/scrie-carte" element={<ScrieCartePage />} />
           <Route path="/read/:id" element={<ReadPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/despre-noi" element={<DesprePage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

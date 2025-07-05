@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
-import { defaultBooks } from "../pages/Descopera";
+
 import { useState, useEffect } from "react";
 import { getBooks, getBooksLocal } from "../utils/Book-Storage";
 import { useAuth } from "../context/Auth-context";
@@ -87,7 +87,7 @@ export default function GenresPage() {
     );
   }
 
-  const allBooks = [...defaultBooks, ...userBooks];
+  const allBooks = [...userBooks];
   const decodedGenre = decodeURIComponent(slug);
   const genreDisplayName = genreDisplayNames[decodedGenre] || decodedGenre;
 
