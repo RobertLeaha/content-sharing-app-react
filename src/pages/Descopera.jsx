@@ -1,7 +1,15 @@
+
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import { useNavigation } from "../hooks/useNavigation";
-import { getBooks, deleteBook } from "../utils/Book-Storage";
+import {
+  getBooks,
+  deleteBook,
+  getBooksLocal,
+  deleteBookLocal,
+} from "../utils/Book-Storage";
+import { useAuth } from "../context/Auth-context";
+import { debugFirestore } from "../utils/firestore-debug";
 
 export const defaultBooks = [
   {
@@ -85,12 +93,30 @@ export default function DescoperaPage() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [userBooks, setUserBooks] = useState([]);
   const [showUserBooksOnly, setShowUserBooksOnly] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useNavigation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const books = getBooks();
-    setUserBooks(books);
-  }, []);
+    const loadBooks = async () => {
+      setIsLoading(true);
+      try {
+        let books = [];
+        if (user) {
+          books = await getBooks(user.uid);
+        } else {
+          books = getBooksLocal();
+        }
+        setUserBooks(books);
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, [user]);
 
   const allBooks = showUserBooksOnly
     ? userBooks
@@ -132,15 +158,33 @@ export default function DescoperaPage() {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
   };
 
-  const handleDeleteBook = (bookId, event) => {
+  const handleDeleteBook = async (bookId, event) => {
     event.stopPropagation();
 
     if (window.confirm("Ești sigur că vrei să ștergi această carte?")) {
-      const success = deleteBook(bookId);
-      if (success) {
-        setUserBooks(getBooks());
-        alert("Cartea a fost ștearsă cu succes!");
-      } else {
+      try {
+        let success = false;
+
+        if (user) {
+          success = await deleteBook(bookId, user.uid);
+        } else {
+          success = deleteBookLocal(bookId);
+        }
+
+        if (success) {
+          // Reîncarcă cărțile după ștergere
+          if (user) {
+            const updatedBooks = await getBooks(user.uid);
+            setUserBooks(updatedBooks);
+          } else {
+            setUserBooks(getBooksLocal());
+          }
+          alert("Cartea a fost ștearsă cu succes!");
+        } else {
+          alert("A apărut o eroare la ștergerea cărții.");
+        }
+      } catch (error) {
+        console.error("Eroare la ștergerea cărții:", error);
         alert("A apărut o eroare la ștergerea cărții.");
       }
     }
@@ -150,9 +194,35 @@ export default function DescoperaPage() {
     return userBooks.some((book) => book.id === bookId);
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-sky-100">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-sky-600">Se încarcă cărțile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-sky-100">
-      <Navigation />
+      <Navigation>
+        {user && process.env.NODE_ENV === "development" && (
+          <button
+            onClick={async () => {
+              console.log("🔍 Începe debugging...");
+              await debugFirestore(user.uid);
+            }}
+            className="px-3 py-1 bg-red-500 text-white text-xs rounded"
+          >
+            Debug Firestore
+          </button>
+        )}
+      </Navigation>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-sky-900 mb-4">
@@ -161,6 +231,14 @@ export default function DescoperaPage() {
           <p className="text-sky-700 text-lg">
             Explorează colecția noastră completă de cărți publicate
           </p>
+          {!user && userBooks.length > 0 && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-amber-700 text-sm">
+                💡 <strong>Tip:</strong> Conectează-te pentru a salva cărțile în
+                cloud și a le accesa de pe orice dispozitiv!
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mb-6 flex justify-center">
@@ -259,7 +337,7 @@ export default function DescoperaPage() {
             >
               {isUserBook(book.id) && (
                 <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full z-10">
-                  Cartea ta
+                  {user ? "☁️ Cloud" : "📱 Local"}
                 </div>
               )}
 

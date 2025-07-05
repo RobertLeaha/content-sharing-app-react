@@ -2,22 +2,46 @@ import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
-import { getBooks } from "../utils/Book-Storage";
+import { getBooks, getBooksLocal } from "../utils/Book-Storage";
 import { defaultBooks } from "./Descopera";
 import { defaultBooksContent } from "../data/defaultBooksContent";
+import { useAuth } from "../context/Auth-context";
 
 export default function ReadPage() {
   const { id } = useParams();
   const router = useNavigation();
+  const { user } = useAuth();
   const [userBooks, setUserBooks] = useState([]);
   const [currentChapter, setCurrentChapter] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const books = getBooks();
-    setUserBooks(books);
-  }, []);
+    const loadBooksAndFindCurrent = async () => {
+      setIsLoading(true);
+      try {
+        let books = [];
+        if (user) {
+          books = await getBooks(user.uid);
+        } else {
+          books = getBooksLocal();
+        }
+        setUserBooks(Array.isArray(books) ? books : []);
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error);
+        setUserBooks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const allBooks = [...defaultBooks, ...userBooks];
+    loadBooksAndFindCurrent();
+  }, [user, id]);
+
+  const allBooks = [
+    ...(defaultBooks || []),
+    ...(Array.isArray(userBooks) ? userBooks : []),
+  ];
+
   const book = allBooks.find((b) => b.id.toString() === id);
 
   const createDemoContent = (bookTitle) => {
@@ -36,6 +60,20 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
       ]
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-sky-100">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-sky-600">Se încarcă cartea...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!book) {
     return (
@@ -64,7 +102,10 @@ Pentru a citi conținutul complet, te rugăm să accesezi versiunea fizică sau 
   }
 
   const chapters = book.chapters || createDemoContent(book.title);
-  const isUserBook = userBooks.some((userBook) => userBook.id === book.id);
+
+  const isUserBook = (Array.isArray(userBooks) ? userBooks : []).some(
+    (userBook) => userBook.id === book.id
+  );
 
   return (
     <div className="min-h-screen bg-sky-100">

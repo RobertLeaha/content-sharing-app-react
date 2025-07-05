@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useNavigation } from "../hooks/useNavigation";
 import Navigation from "../components/Navigation";
 import { defaultBooks } from "./Descopera";
-import { getBooks } from "../utils/Book-Storage";
+import { getBooks, getBooksLocal } from "../utils/Book-Storage";
+import { useAuth } from "../context/Auth-context";
 
 const extendedBookDetails = {
   "În numele trandafirului": {
@@ -47,12 +48,45 @@ const extendedBookDetails = {
 export default function BookPage() {
   const { id } = useParams();
   const router = useNavigation();
+  const { user } = useAuth();
   const [userBooks, setUserBooks] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const books = getBooks();
-    setUserBooks(books);
-  }, []);
+    const loadBooks = async () => {
+      setIsLoading(true);
+      try {
+        let books = [];
+        if (user) {
+          books = await getBooks(user.uid);
+        } else {
+          books = getBooksLocal();
+        }
+        setUserBooks(Array.isArray(books) ? books : []);
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error);
+        setUserBooks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, [user, id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-sky-100">
+        <Navigation />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-sky-600">Se încarcă detaliile cărții...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const allBooks = [...defaultBooks, ...userBooks];
   const book = allBooks.find((b) => b.id.toString() === id);

@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
-import { getBooks, updateBook } from "../utils/Book-Storage";
+import {
+  getBooks,
+  updateBook,
+  getBooksLocal,
+  updateBookLocal,
+} from "../utils/Book-Storage";
 import { useNavigation } from "../hooks/useNavigation";
+import { useAuth } from "../context/Auth-context";
 
 export default function CapitolPage() {
   const [chapterData, setChapterData] = useState({
@@ -11,14 +17,32 @@ export default function CapitolPage() {
   });
   const [userBooks, setUserBooks] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useNavigation();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const books = getBooks();
-    setUserBooks(books);
-  }, []);
+    const loadBooks = async () => {
+      setIsLoading(true);
+      try {
+        let books = [];
+        if (user) {
+          books = await getBooks(user.uid);
+        } else {
+          books = getBooksLocal();
+        }
+        setUserBooks(books);
+      } catch (error) {
+        console.error("Eroare la încărcarea cărților:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleSave = () => {
+    loadBooks();
+  }, [user]);
+
+  const handleSave = async () => {
     // Validare de bază
     if (!chapterData.bookId) {
       alert("Te rog să selectezi o carte!");
@@ -58,10 +82,21 @@ export default function CapitolPage() {
       // Adaugă capitolul la cartea existentă
       const updatedChapters = [...(selectedBook.chapters || []), newChapter];
 
-      // Actualizează cartea cu noul capitol
-      const success = updateBook(selectedBook.id, {
-        chapters: updatedChapters,
-      });
+      let success = false;
+
+      if (user) {
+        // Utilizator autentificat - actualizează în Firestore
+        success = await updateBook(
+          selectedBook.id,
+          { chapters: updatedChapters },
+          user.uid
+        );
+      } else {
+        // Utilizator neautentificat - actualizează local
+        success = updateBookLocal(selectedBook.id, {
+          chapters: updatedChapters,
+        });
+      }
 
       if (success) {
         alert(
@@ -76,7 +111,12 @@ export default function CapitolPage() {
         });
 
         // Reîncarcă cărțile pentru a reflecta schimbările
-        setUserBooks(getBooks());
+        if (user) {
+          const updatedBooks = await getBooks(user.uid);
+          setUserBooks(updatedBooks);
+        } else {
+          setUserBooks(getBooksLocal());
+        }
 
         // Redirectionează către pagina cărții după 1 secundă
         setTimeout(() => {
@@ -89,13 +129,32 @@ export default function CapitolPage() {
       }
     } catch (error) {
       console.error("Eroare la salvarea capitolului:", error);
-      alert(
-        "A apărut o eroare la salvarea capitolului. Te rog să încerci din nou."
-      );
+      if (error.message.includes("autentificat")) {
+        alert("Te rugăm să te conectezi pentru a salva capitolul în cloud.");
+        router.push("/conectare");
+      } else {
+        alert(
+          "A apărut o eroare la salvarea capitolului. Te rog să încerci din nou."
+        );
+      }
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-sky-100">
+        <Navigation />
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-sky-600">Se încarcă cărțile tale...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-sky-100">
@@ -108,14 +167,25 @@ export default function CapitolPage() {
                 <span className="mr-3">📄</span>
                 <h1 className="text-2xl font-bold">Scrie un capitol nou</h1>
               </div>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                <span className="mr-2">💾</span>
-                {isSaving ? "Se salvează..." : "Salvează capitol"}
-              </button>
+              <div className="flex items-center space-x-4">
+                {!user && (
+                  <div className="text-sky-100 text-sm">
+                    💡 Conectează-te pentru cloud sync
+                  </div>
+                )}
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  <span className="mr-2">💾</span>
+                  {isSaving
+                    ? "Se salvează..."
+                    : user
+                    ? "Salvează în cloud"
+                    : "Salvează local"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -309,6 +379,13 @@ Poți folosi paragrafe pentru a structura textul și a face lectura mai plăcut�
                   <p className="text-sm text-sky-700">
                     <span className="text-red-500">*</span> Câmpurile marcate
                     sunt obligatorii pentru salvarea capitolului.
+                    {!user && (
+                      <span className="block mt-2 text-sky-600">
+                        💡 <strong>Tip:</strong> Conectează-te pentru a salva
+                        capitolele în cloud și a le sincroniza pe toate
+                        dispozitivele!
+                      </span>
+                    )}
                   </p>
                 </div>
               </>

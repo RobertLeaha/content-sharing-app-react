@@ -1,7 +1,8 @@
 import { useState } from "react";
 import Navigation from "../components/Navigation";
 import { useNavigation } from "../hooks/useNavigation";
-import { saveBook } from "../utils/Book-Storage";
+import { saveBook, saveBookLocal } from "../utils/Book-Storage";
+import { useAuth } from "../context/Auth-context";
 
 export default function ScrieCartePage() {
   const [bookData, setBookData] = useState({
@@ -12,6 +13,7 @@ export default function ScrieCartePage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const router = useNavigation();
+  const { user } = useAuth();
 
   const addChapter = () => {
     setBookData((prev) => ({
@@ -36,7 +38,7 @@ export default function ScrieCartePage() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validare de bază
     if (!bookData.title.trim()) {
       alert("Te rog să introduci un titlu pentru carte!");
@@ -76,12 +78,21 @@ export default function ScrieCartePage() {
         chapters: validChapters,
       };
 
-      // Salvează cartea
-      const savedBook = saveBook(bookToSave);
+      let savedBook;
+
+      if (user) {
+        // Utilizator autentificat - salvează în Firestore
+        savedBook = await saveBook(bookToSave, user.uid);
+        alert("Cartea a fost salvată cu succes în cloud! 🎉");
+      } else {
+        // Utilizator neautentificat - salvează local
+        savedBook = saveBookLocal(bookToSave);
+        alert(
+          "Cartea a fost salvată local! Pentru a o salva în cloud, te rugăm să te conectezi. 📱"
+        );
+      }
 
       if (savedBook) {
-        alert("Cartea a fost salvată cu succes! 🎉");
-
         // Resetează formularul
         setBookData({
           title: "",
@@ -101,7 +112,14 @@ export default function ScrieCartePage() {
       }
     } catch (error) {
       console.error("Eroare la salvarea cărții:", error);
-      alert("A apărut o eroare la salvarea cărții. Te rog să încerci din nou.");
+      if (error.message.includes("autentificat")) {
+        alert("Te rugăm să te conectezi pentru a salva cartea în cloud.");
+        router.push("/conectare");
+      } else {
+        alert(
+          "A apărut o eroare la salvarea cărții. Te rog să încerci din nou."
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -112,7 +130,6 @@ export default function ScrieCartePage() {
       <Navigation />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
           <div className="bg-sky-600 text-white p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -120,19 +137,29 @@ export default function ScrieCartePage() {
                 <h1 className="text-2xl font-bold">Scrie o carte nouă</h1>
               </div>
 
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-              >
-                <span className="mr-2">💾</span>
-                {isSaving ? "Se salvează..." : "Salvează"}
-              </button>
+              <div className="flex items-center space-x-4">
+                {!user && (
+                  <div className="text-sky-100 text-sm">
+                    💡 Conectează-te pentru a salva în cloud
+                  </div>
+                )}
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex items-center px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:bg-sky-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  <span className="mr-2">💾</span>
+                  {isSaving
+                    ? "Se salvează..."
+                    : user
+                    ? "Salvează în cloud"
+                    : "Salvează local"}
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="p-8">
-            {/* Informații generale */}
             <div className="mb-8">
               <h2 className="text-xl font-bold text-sky-900 mb-4">
                 Informații generale
@@ -207,7 +234,6 @@ export default function ScrieCartePage() {
               </div>
             </div>
 
-            {/* Capitole */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-sky-900">Capitole</h2>
@@ -274,17 +300,21 @@ export default function ScrieCartePage() {
               </div>
             </div>
 
-            {/* Notă despre câmpurile obligatorii */}
             <div className="mt-6 p-4 bg-sky-50 rounded-lg">
               <p className="text-sm text-sky-700">
                 <span className="text-red-500">*</span> Câmpurile marcate sunt
                 obligatorii pentru salvarea cărții.
+                {!user && (
+                  <span className="block mt-2 text-sky-600">
+                    💡 <strong>Tip:</strong> Conectează-te pentru a salva
+                    cărțile în cloud și a le accesa de pe orice dispozitiv!
+                  </span>
+                )}
               </p>
             </div>
           </div>
         </div>
       </div>
-         
     </div>
   );
 }
