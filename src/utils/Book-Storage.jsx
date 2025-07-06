@@ -41,7 +41,7 @@ export const saveBook = async (bookData, userId) => {
         slug: bookData.genre,
         name: getGenreName(bookData.genre),
       },
-      cover: "/placeholder.svg?height=300&width=200",
+      cover: bookData.cover || "/placeholder.svg?height=300&width=200",
       createdAt: new Date(),
       updatedAt: new Date(),
       isPublic: true, // Cartea este publică implicit
@@ -341,7 +341,7 @@ export const saveBookLocal = (bookData) => {
         slug: bookData.genre,
         name: getGenreName(bookData.genre),
       },
-      cover: "/placeholder.svg?height=300&width=200",
+      cover: bookData.cover || "/placeholder.svg?height=300&width=200",
       isPublic: false, // Cărțile locale nu sunt publice
     };
 

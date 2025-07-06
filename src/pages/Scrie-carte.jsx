@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import Navigation from "../components/Navigation";
 import PageHeader from "../components/PageHeader";
@@ -16,7 +14,7 @@ export default function ScrieCartePage() {
     title: "",
     description: "",
     genre: "",
-    cover: null,
+    cover: null, // Va stoca string-ul base64
     chapterBackgroundColor: "bg-white",
     chapters: [{ title: "", content: "" }],
   });
@@ -41,8 +39,12 @@ export default function ScrieCartePage() {
     setBookData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleCoverChange = (coverUrl) => {
-    setBookData((prev) => ({ ...prev, cover: coverUrl }));
+  const handleCoverChange = (base64String) => {
+    console.log(
+      "📸 Copertă actualizată:",
+      base64String ? "Base64 primit" : "Copertă ștearsă"
+    );
+    setBookData((prev) => ({ ...prev, cover: base64String }));
   };
 
   const handleColorChange = (color) => {
@@ -73,6 +75,7 @@ export default function ScrieCartePage() {
   };
 
   const handleSave = async () => {
+    // Validări
     if (!bookData.title.trim()) {
       alert("Te rog să introduci un titlu pentru carte!");
       return;
@@ -107,8 +110,21 @@ export default function ScrieCartePage() {
       const bookToSave = {
         ...bookData,
         chapters: validChapters,
+        // Folosește coperta base64 dacă există, altfel placeholder
         cover: bookData.cover || "/placeholder.svg?height=400&width=300",
       };
+
+      console.log("💾 Salvez cartea:", {
+        title: bookToSave.title,
+        genre: bookToSave.genre,
+        chaptersCount: bookToSave.chapters.length,
+        hasCover:
+          !!bookToSave.cover &&
+          bookToSave.cover !== "/placeholder.svg?height=400&width=300",
+        coverType: bookToSave.cover?.startsWith("data:image/")
+          ? "base64"
+          : "placeholder",
+      });
 
       let savedBook;
 
@@ -123,6 +139,9 @@ export default function ScrieCartePage() {
       }
 
       if (savedBook) {
+        console.log("✅ Carte salvată cu succes:", savedBook.id);
+
+        // Resetează formularul
         setBookData({
           title: "",
           description: "",
@@ -141,7 +160,7 @@ export default function ScrieCartePage() {
         );
       }
     } catch (error) {
-      console.error("Eroare la salvarea cărții:", error);
+      console.error("❌ Eroare la salvarea cărții:", error);
       if (error.message.includes("autentificat")) {
         alert("Te rugăm să te conectezi pentru a salva cartea în cloud.");
         router.push("/conectare");
@@ -197,6 +216,7 @@ export default function ScrieCartePage() {
                     onCoverChange={handleCoverChange}
                     bookId={`temp_${Date.now()}`}
                     disabled={isSaving}
+                    maxFileSize={10 * 1024 * 1024} // 10MB pentru această pagină
                   />
                 </div>
 
@@ -328,6 +348,7 @@ export default function ScrieCartePage() {
               </div>
             </div>
 
+            {/* Informații despre salvare */}
             <div className="mt-6 p-4 bg-sky-50 rounded-lg">
               <p className="text-sm text-sky-700">
                 <span className="text-red-500">*</span> Câmpurile marcate sunt
@@ -339,6 +360,22 @@ export default function ScrieCartePage() {
                   </span>
                 )}
               </p>
+
+              {/* Status copertă */}
+              <div className="mt-3 pt-3 border-t border-sky-200">
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-sky-600">📸 Copertă:</span>
+                  {bookData.cover ? (
+                    <span className="text-green-600 font-medium">
+                      ✅ Încărcată (Base64)
+                    </span>
+                  ) : (
+                    <span className="text-amber-600">
+                      ⚠️ Folosește placeholder
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
