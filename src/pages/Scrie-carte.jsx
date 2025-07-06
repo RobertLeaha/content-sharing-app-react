@@ -1,8 +1,12 @@
+"use client";
+
 import { useState } from "react";
 import Navigation from "../components/Navigation";
 import PageHeader from "../components/PageHeader";
 import FormField from "../components/FormField";
 import Button from "../components/Button";
+import CoverUpload from "../components/CoverUpload";
+import ChapterColorPicker from "../components/ChapterColorPicker";
 import { useNavigation } from "../hooks/useNavigation";
 import { saveBook, saveBookLocal } from "../utils/Book-Storage";
 import { useAuth } from "../context/Auth-context";
@@ -12,6 +16,8 @@ export default function ScrieCartePage() {
     title: "",
     description: "",
     genre: "",
+    cover: null,
+    chapterBackgroundColor: "bg-white",
     chapters: [{ title: "", content: "" }],
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -33,6 +39,14 @@ export default function ScrieCartePage() {
 
   const handleInputChange = (field) => (e) => {
     setBookData((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleCoverChange = (coverUrl) => {
+    setBookData((prev) => ({ ...prev, cover: coverUrl }));
+  };
+
+  const handleColorChange = (color) => {
+    setBookData((prev) => ({ ...prev, chapterBackgroundColor: color }));
   };
 
   const addChapter = () => {
@@ -93,6 +107,7 @@ export default function ScrieCartePage() {
       const bookToSave = {
         ...bookData,
         chapters: validChapters,
+        cover: bookData.cover || "/placeholder.svg?height=400&width=300",
       };
 
       let savedBook;
@@ -112,6 +127,8 @@ export default function ScrieCartePage() {
           title: "",
           description: "",
           genre: "",
+          cover: null,
+          chapterBackgroundColor: "bg-white",
           chapters: [{ title: "", content: "" }],
         });
 
@@ -168,27 +185,51 @@ export default function ScrieCartePage() {
 
           <div className="p-8">
             <div className="mb-8">
-              <h2 className="text-xl font-bold text-sky-900 mb-4">
+              <h2 className="text-xl font-bold text-sky-900 mb-6">
                 Informații generale
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  label="Titlul cărții"
-                  value={bookData.title}
-                  onChange={handleInputChange("title")}
-                  placeholder="Introdu titlul cărții..."
-                  required
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Coloana 1: Copertă */}
+                <div>
+                  <CoverUpload
+                    currentCover={bookData.cover}
+                    onCoverChange={handleCoverChange}
+                    bookId={`temp_${Date.now()}`}
+                    disabled={isSaving}
+                  />
+                </div>
 
-                <FormField
-                  label="Genul"
-                  type="select"
-                  value={bookData.genre}
-                  onChange={handleInputChange("genre")}
-                  options={genreOptions}
-                  required
-                />
+                {/* Coloana 2: Informații de bază */}
+                <div className="space-y-6">
+                  <FormField
+                    label="Titlul cărții"
+                    value={bookData.title}
+                    onChange={handleInputChange("title")}
+                    placeholder="Introdu titlul cărții..."
+                    required
+                    disabled={isSaving}
+                  />
+
+                  <FormField
+                    label="Genul"
+                    type="select"
+                    value={bookData.genre}
+                    onChange={handleInputChange("genre")}
+                    options={genreOptions}
+                    required
+                    disabled={isSaving}
+                  />
+                </div>
+
+                {/* Coloana 3: Personalizare */}
+                <div>
+                  <ChapterColorPicker
+                    currentColor={bookData.chapterBackgroundColor}
+                    onColorChange={handleColorChange}
+                    disabled={isSaving}
+                  />
+                </div>
               </div>
 
               <div className="mt-6">
@@ -200,6 +241,7 @@ export default function ScrieCartePage() {
                   placeholder="Scrie o descriere captivantă a cărții tale..."
                   rows={4}
                   required
+                  disabled={isSaving}
                 />
               </div>
             </div>
@@ -207,7 +249,7 @@ export default function ScrieCartePage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-sky-900">Capitole</h2>
-                <Button onClick={addChapter} icon="➕">
+                <Button onClick={addChapter} icon="➕" disabled={isSaving}>
                   Adaugă capitol
                 </Button>
               </div>
@@ -216,46 +258,70 @@ export default function ScrieCartePage() {
                 {bookData.chapters.map((chapter, index) => (
                   <div
                     key={index}
-                    className="border border-sky-200 rounded-lg p-6"
+                    className="border border-sky-200 rounded-lg overflow-hidden"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-sky-800">
-                        Capitol {index + 1}
-                      </h3>
-                      {bookData.chapters.length > 1 && (
-                        <Button
-                          variant="danger"
-                          size="small"
-                          onClick={() => removeChapter(index)}
-                          icon="🗑"
-                        >
-                          Șterge
-                        </Button>
+                    <div className="bg-sky-50 px-6 py-4 border-b border-sky-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-sky-800">
+                          Capitol {index + 1}
+                        </h3>
+                        {bookData.chapters.length > 1 && (
+                          <Button
+                            variant="danger"
+                            size="small"
+                            onClick={() => removeChapter(index)}
+                            icon="🗑"
+                            disabled={isSaving}
+                          >
+                            Șterge
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <FormField
+                          label="Titlul capitolului"
+                          value={chapter.title}
+                          onChange={(e) =>
+                            updateChapter(index, "title", e.target.value)
+                          }
+                          placeholder="Titlul capitolului..."
+                          disabled={isSaving}
+                        />
+                      </div>
+
+                      <div>
+                        <FormField
+                          label="Conținutul capitolului"
+                          type="textarea"
+                          value={chapter.content}
+                          onChange={(e) =>
+                            updateChapter(index, "content", e.target.value)
+                          }
+                          placeholder="Scrie conținutul capitolului aici..."
+                          rows={12}
+                          disabled={isSaving}
+                        />
+                      </div>
+
+                      {/* Preview cu culoarea selectată */}
+                      {chapter.content && (
+                        <div className="mt-4">
+                          <p className="text-sm text-sky-600 mb-2">
+                            Preview cu culoarea selectată:
+                          </p>
+                          <div
+                            className={`${bookData.chapterBackgroundColor} border border-sky-200 rounded-lg p-4`}
+                          >
+                            <p className="text-sky-800 text-sm">
+                              {chapter.content.substring(0, 200)}
+                              {chapter.content.length > 200 ? "..." : ""}
+                            </p>
+                          </div>
+                        </div>
                       )}
-                    </div>
-
-                    <div className="mb-4">
-                      <FormField
-                        label="Titlul capitolului"
-                        value={chapter.title}
-                        onChange={(e) =>
-                          updateChapter(index, "title", e.target.value)
-                        }
-                        placeholder="Titlul capitolului..."
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        label="Conținutul capitolului"
-                        type="textarea"
-                        value={chapter.content}
-                        onChange={(e) =>
-                          updateChapter(index, "content", e.target.value)
-                        }
-                        placeholder="Scrie conținutul capitolului aici..."
-                        rows={12}
-                      />
                     </div>
                   </div>
                 ))}

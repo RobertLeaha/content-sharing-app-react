@@ -91,6 +91,7 @@ export default function ReadPage() {
 
   const chapters = book.chapters || [];
   const isUserBook = user && book.userId === user.uid;
+  const chapterBgColor = book.chapterBackgroundColor || "bg-white";
 
   return (
     <div className="min-h-screen bg-sky-100">
@@ -169,8 +170,10 @@ export default function ReadPage() {
           )}
         </div>
 
-        {/* Conținutul capitolului */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+        {/* Conținutul capitolului cu culoarea personalizată */}
+        <div
+          className={`${chapterBgColor} rounded-2xl shadow-xl overflow-hidden mb-6`}
+        >
           <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-6 border-b border-sky-200">
             <h2 className="text-2xl font-bold text-sky-900 mb-2">
               {chapters[currentChapter]?.title || "Conținut"}
