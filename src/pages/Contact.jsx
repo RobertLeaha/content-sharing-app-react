@@ -43,13 +43,6 @@ export default function ContactPage() {
       action: () => window.open("mailto:contact@micameacarte.ro"),
     },
     {
-      icon: "💬",
-      title: "Chat Live",
-      description: "Vorbește direct cu echipa noastră de suport",
-      contact: "Disponibil L-V, 9:00-18:00",
-      action: () => alert("Chat-ul live va fi disponibil în curând!"),
-    },
-    {
       icon: "📱",
       title: "Social Media",
       description: "Urmărește-ne și contactează-ne pe rețelele sociale",
